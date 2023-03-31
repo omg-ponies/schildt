@@ -1,22 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script>
-        const apiKey = '7i7EMSlq48BdYNGdZE85wYLyoGf6M4Nz';
-        const themes = [
-            'cake',
-            'office',
-            'hamsters',
-            'batman',
-            'muheu thai',
-            'rollercoaster',
-            'strawberries'
-        ];
+  <script>
+    const apiKey = '7i7EMSlq48BdYNGdZE85wYLyoGf6M4Nz';
+    const themes = [
+        'cake',
+        'office',
+        'hamsters',
+        'batman',
+        'muay thai',
+        'rollercoaster',
+        'strawberries'
+    ];
 
-        const today = new Date();
-        const theme = themes[today.getDay()];
-        const apiUrl = `https://api.giphy.com/v1/gifs/random?api_key=${apiKey}&tag=${theme}`;
+    const today = new Date();
+    const theme = themes[today.getDay()];
+    const apiUrl = `https://api.giphy.com/v1/gifs/random?api_key=${apiKey}&tag=${theme}`;
 
+    function fetchRandomGif() {
         fetch(apiUrl)
             .then((response) => response.json())
             .then((data) => {
@@ -24,7 +25,12 @@
                 document.body.style.backgroundImage = `url('${gifUrl}')`;
             })
             .catch((error) => console.error('Error fetching random GIF:', error));
-    </script>
+    }
+
+    fetchRandomGif(); // Load the first GIF immediately
+    setInterval(fetchRandomGif, 5000); // Change the GIF every 5 seconds
+</script>
+
     
 
 
