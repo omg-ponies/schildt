@@ -9,7 +9,7 @@
         'hamsters',
         'batman',
         'muay thai',
-        'rollercoaster',
+        'elfs',
         'strawberries'
     ];
 
@@ -44,7 +44,10 @@
         return colors[Math.floor(Math.random() * colors.length)];
     }
 
-    function createConfettiParticle(x, y) {
+function createConfettiParticle(x, y) {
+    const particleCount = 50; // Increase the number of particles generated per click
+
+    for (let i = 0; i < particleCount; i++) {
         const particle = document.createElement('div');
         particle.className = 'confetti';
         particle.style.left = `${x}px`;
@@ -58,13 +61,13 @@
         }, 2000);
 
         const angle = Math.random() * 360;
-        const distance = Math.random() * 100;
-        const duration = 2000;
+        const distance = Math.random() * 200; // Increase the distance the particles travel
+        const duration = 1000 + Math.random() * 1000; // Decrease the animation duration
 
         const animationName = `confetti-${Date.now()}`;
         const animation = `@keyframes ${animationName} {
-            0% { transform: translate(0, 0) rotate(0); }
-            100% { transform: translate(${Math.cos(angle) * distance}px, ${Math.sin(angle) * distance}px) rotate(360deg); }
+            0% { transform: translate(0, 0) rotate(0); opacity: 1; }
+            100% { transform: translate(${Math.cos(angle) * distance}px, ${Math.sin(angle) * distance}px) rotate(360deg); opacity: 0; }
         }`;
 
         const style = document.createElement('style');
@@ -77,6 +80,8 @@
             document.head.removeChild(style);
         }, duration);
     }
+}
+
 
     document.addEventListener('click', (event) => {
         createConfettiParticle(event.clientX, event.clientY);
@@ -115,13 +120,15 @@
         }
       
         
-        .confetti {
-            position: fixed;
-            width: 10px;
-            height: 10px;
-            z-index: 9999;
-            pointer-events: none;
-        }
+  .confetti {
+    position: fixed;
+    width: 5px;
+    height: 5px;
+    z-index: 9999;
+    pointer-events: none;
+    border-radius: 50%; // Optional: make the particles circular
+}
+
 
         footer {
             position: fixed;
