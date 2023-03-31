@@ -10,9 +10,12 @@
             line-height: 1.6;
             margin: 0;
             padding: 0;
+            background-repeat: no-repeat;
+            background-size: cover;
+            background-position: center;
         }
         header {
-            background-color: #333;
+            background-color: rgba(51, 51, 51, 0.8);
             color: #fff;
             padding: 1rem;
             text-align: center;
@@ -20,14 +23,39 @@
         main {
             padding: 2rem;
             text-align: center;
+            background-color: rgba(255, 255, 255, 0.8);
         }
         footer {
-            background-color: #333;
+            background-color: rgba(51, 51, 51, 0.8);
             color: #fff;
             padding: 1rem;
             text-align: center;
         }
     </style>
+    <script>
+        const apiKey = '7i7EMSlq48BdYNGdZE85wYLyoGf6M4Nz';
+        const themes = [
+            'sunday',
+            'monday',
+            'tuesday',
+            'wednesday',
+            'thursday',
+            'friday',
+            'saturday'
+        ];
+
+        const today = new Date();
+        const theme = themes[today.getDay()];
+        const apiUrl = `https://api.giphy.com/v1/gifs/random?api_key=${apiKey}&tag=${theme}`;
+
+        fetch(apiUrl)
+            .then((response) => response.json())
+            .then((data) => {
+                const gifUrl = data.data.images.original.url;
+                document.body.style.backgroundImage = `url('${gifUrl}')`;
+            })
+            .catch((error) => console.error('Error fetching random GIF:', error));
+    </script>
 </head>
 <body>
     <header>
