@@ -29,6 +29,73 @@
 
     fetchRandomGif(); // Load the first GIF immediately
     setInterval(fetchRandomGif, 6500); // Change the GIF every 5 seconds
+
+
+
+<!-- Confetti -->
+    
+    
+    function getRandomColor() {
+    const colors = [
+        '#FF4136', // Red
+        '#FF851B', // Orange
+        '#FFDC00', // Yellow
+        '#01FF70', // Green
+        '#0074D9', // Blue
+        '#B10DC9', // Purple
+    ];
+    return colors[Math.floor(Math.random() * colors.length)];
+}
+
+function createConfettiParticle(x, y) {
+    const particle = document.createElement('div');
+    particle.className = 'confetti';
+    particle.style.left = `${x}px`;
+    particle.style.top = `${y}px`;
+    particle.style.backgroundColor = getRandomColor();
+
+function createConfettiParticle(x, y) {
+    const particle = document.createElement('div');
+    particle.className = 'confetti';
+    particle.style.left = `${x}px`;
+    particle.style.top = `${y}px`;
+
+    document.body.appendChild(particle);
+
+    setTimeout(() => {
+        document.body.removeChild(particle);
+    }, 2000);
+
+    const angle = Math.random() * 360;
+    const distance = Math.random() * 100;
+    const duration = 2000;
+
+    const animationName = `confetti-${Date.now()}`;
+    const animation = `@keyframes ${animationName} {
+        0% { transform: translate(0, 0) rotate(0); }
+        100% { transform: translate(${Math.cos(angle) * distance}px, ${Math.sin(angle) * distance}px) rotate(360deg); }
+    }`;
+
+    const style = document.createElement('style');
+    style.textContent = animation;
+    document.head.appendChild(style);
+
+    particle.style.animation = `${animationName} ${duration}ms linear`;
+
+    setTimeout(() => {
+        document.head.removeChild(style);
+    }, duration);
+}
+
+document.addEventListener('click', (event) => {
+    createConfettiParticle(event.clientX, event.clientY);
+});
+    
+    
+    
+    <!-- end of confetti -->
+
+
 </script>
 
     
