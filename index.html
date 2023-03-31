@@ -31,7 +31,7 @@
     setInterval(fetchRandomGif, 6500); // Change the GIF every 5 seconds
 
 
-    // Confetti
+     // Confetti
     function getRandomColor() {
         const colors = [
             '#FF4136', // Red
@@ -82,7 +82,7 @@
         createConfettiParticle(event.clientX, event.clientY);
     });
 
-    // End of confetti now
+    // End of confetti updated
 </script>
 
 
@@ -113,6 +113,15 @@
             background-repeat: no-repeat;
             background-attachment: fixed;
         }
+      
+        
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            z-index: 9999;
+            pointer-events: none;
+        }
 
         footer {
             position: fixed;
@@ -138,6 +147,7 @@
         color: #000000;
         text-decoration: underline;
     }
+
 
 
       
