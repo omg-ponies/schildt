@@ -1,6 +1,100 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  
+  <!-- Pong game styles -->
+<style>
+    canvas#pong {
+        position: fixed;
+        z-index: 10000;
+        pointer-events: none;
+        display: none;
+    }
+</style>
+
+<!-- Pong game script -->
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        let pongCanvas = document.createElement("canvas");
+        pongCanvas.id = "pong";
+        pongCanvas.width = 300;
+        pongCanvas.height = 150;
+        document.body.appendChild(pongCanvas);
+    });
+
+    document.addEventListener("click", (event) => {
+        const pongCanvas = document.getElementById("pong");
+        pongCanvas.style.display = "block";
+        pongCanvas.style.left = `${event.clientX}px`;
+        pongCanvas.style.top = `${event.clientY}px`;
+        startPongGame(pongCanvas);
+    });
+
+    function startPongGame(canvas) {
+        const ctx = canvas.getContext("2d");
+        const paddleWidth = 10;
+const paddleHeight = 50;
+const ballRadius = 5;
+const aiSpeed = 2;
+
+const player = { x: 20, y: canvas.height / 2 - paddleHeight / 2 };
+const ai = { x: canvas.width - 20 - paddleWidth, y: canvas.height / 2 - paddleHeight / 2 };
+const ball = { x: canvas.width / 2, y: canvas.height / 2, vx: 2, vy: 2 };
+
+function draw() {
+    // Clear the canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw player paddle
+    ctx.fillStyle = "white";
+    ctx.fillRect(player.x, player.y, paddleWidth, paddleHeight);
+
+    // Draw AI paddle
+    ctx.fillStyle = "white";
+    ctx.fillRect(ai.x, ai.y, paddleWidth, paddleHeight);
+
+    // Draw ball
+    ctx.beginPath();
+    ctx.arc(ball.x, ball.y, ballRadius, 0, Math.PI * 2);
+    ctx.fillStyle = "white";
+    ctx.fill();
+
+    // Update ball position
+    ball.x += ball.vx;
+    ball.y += ball.vy;
+
+    // Collision detection
+    if (ball.y + ballRadius > canvas.height || ball.y - ballRadius < 0) {
+        ball.vy = -ball.vy;
+    }
+
+    if (ball.x + ballRadius > canvas.width) {
+        ball.x = canvas.width / 2;
+        ball.y = canvas.height / 2;
+        ball.vx = -ball.vx;
+    } else if (ball.x - ballRadius < 0) {
+        ball.x = canvas.width / 2;
+        ball.y = canvas.height / 2;
+        ball.vx = -ball.vx;
+    }
+
+    // Player paddle collision
+    if (ball.x - ballRadius < player.x + paddleWidth &&
+        ball.y + ballRadius > player.y && ball.y - ballRadius < player.y + paddleHeight) {
+        ball.vx = -ball.vx;
+    }
+
+    // AI paddle collision
+    if (ball.x + ballRadius > ai.x &&
+        ball.y + ballRadius > ai.y && ball.y - ballRadius < ai.y + paddleHeight) {
+        ball.vx = -ball.vx;
+    }
+
+</script>
+
+  
+  
+  
   <script>
     const apiKey = '7i7EMSlq48BdYNGdZE85wYLyoGf6M4Nz';
     const themes = [
