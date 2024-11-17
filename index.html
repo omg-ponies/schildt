@@ -3,97 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pong Game</title>
+    <title>Interactive Page</title>
     <style>
-        canvas#pong {
+        body {
+            margin: 0;
+            height: 100vh;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            overflow: hidden;
+        }
+
+        .firework {
             position: fixed;
-            z-index: 10000;
-            display: none;
-            background: black;
-            border: 2px solid white;
+            width: 2px;
+            height: 2px;
+            z-index: 9999;
+            pointer-events: none;
+            border-radius: 50%;
+        }
+
+        footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            text-align: center;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: #ffffff;
+            font-size: 8px;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
         }
     </style>
 </head>
 <body>
-    <button id="startPong" style="position: fixed; top: 20px; left: 20px; z-index: 10001;">Start Pong Game</button>
-    <canvas id="pong" width="300" height="150"></canvas>
+    <footer>
+        <!-- Links removed as per the request -->
+        <span>Interactive Page Footer</span>
+    </footer>
     <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            const startButton = document.getElementById("startPong");
-            const pongCanvas = document.getElementById("pong");
-            const ctx = pongCanvas.getContext("2d");
+        // Firework Effect
+        function getRandomColor() {
+            const colors = ['#FF4136', '#FF851B', '#FFDC00', '#01FF70', '#0074D9', '#B10DC9'];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
 
-            let isGameRunning = false;
+        function createFireworkParticle(x, y) {
+            const particleCount = 100; // More particles for enhanced fireworks
 
-            const paddleWidth = 10, paddleHeight = 50, ballRadius = 5, aiSpeed = 2;
-            const player = { x: 20, y: pongCanvas.height / 2 - paddleHeight / 2 };
-            const ai = { x: pongCanvas.width - 20 - paddleWidth, y: pongCanvas.height / 2 - paddleHeight / 2 };
-            const ball = { x: pongCanvas.width / 2, y: pongCanvas.height / 2, vx: 2, vy: 2 };
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'firework';
+                particle.style.left = `${x}px`;
+                particle.style.top = `${y}px`;
+                particle.style.backgroundColor = getRandomColor();
 
-            function draw() {
-                ctx.clearRect(0, 0, pongCanvas.width, pongCanvas.height);
+                document.body.appendChild(particle);
 
-                // Player Paddle
-                ctx.fillStyle = "white";
-                ctx.fillRect(player.x, player.y, paddleWidth, paddleHeight);
+                const angle = Math.random() * 360;
+                const distance = Math.random() * 100; // Smaller spread for more compact sparks
+                const duration = 500 + Math.random() * 500; // Shorter animation duration
 
-                // AI Paddle
-                ctx.fillStyle = "white";
-                ctx.fillRect(ai.x, ai.y, paddleWidth, paddleHeight);
+                const animationName = `firework-${Date.now()}-${i}`;
+                const animation = `@keyframes ${animationName} {
+                    0% { transform: translate(0, 0) scale(1); opacity: 1; }
+                    100% { transform: translate(${Math.cos(angle) * distance}px, ${Math.sin(angle) * distance}px) scale(0.5); opacity: 0; }
+                }`;
 
-                // Ball
-                ctx.beginPath();
-                ctx.arc(ball.x, ball.y, ballRadius, 0, Math.PI * 2);
-                ctx.fillStyle = "white";
-                ctx.fill();
+                const style = document.createElement('style');
+                style.textContent = animation;
+                document.head.appendChild(style);
 
-                // Ball Movement
-                ball.x += ball.vx;
-                ball.y += ball.vy;
+                particle.style.animation = `${animationName} ${duration}ms ease-out`;
 
-                // Ball Collision with Walls
-                if (ball.y + ballRadius > pongCanvas.height || ball.y - ballRadius < 0) {
-                    ball.vy = -ball.vy;
-                }
-
-                // Ball Collision with Player Paddle
-                if (ball.x - ballRadius < player.x + paddleWidth &&
-                    ball.y > player.y && ball.y < player.y + paddleHeight) {
-                    ball.vx = -ball.vx;
-                }
-
-                // Ball Collision with AI Paddle
-                if (ball.x + ballRadius > ai.x &&
-                    ball.y > ai.y && ball.y < ai.y + paddleHeight) {
-                    ball.vx = -ball.vx;
-                }
-
-                // Reset Ball if Out of Bounds
-                if (ball.x + ballRadius > pongCanvas.width || ball.x - ballRadius < 0) {
-                    ball.x = pongCanvas.width / 2;
-                    ball.y = pongCanvas.height / 2;
-                }
+                setTimeout(() => {
+                    document.head.removeChild(style);
+                    document.body.removeChild(particle);
+                }, duration);
             }
+        }
 
-            function updateAI() {
-                if (ai.y + paddleHeight / 2 < ball.y) ai.y += aiSpeed;
-                else if (ai.y + paddleHeight / 2 > ball.y) ai.y -= aiSpeed;
+        document.addEventListener('click', (event) => {
+            createFireworkParticle(event.clientX, event.clientY);
+        });
+
+        // Easter Egg: Beep Sound and LinkedIn Link
+        let clickCount = 0;
+
+        function playBeep() {
+            const audio = new Audio('https://www.soundjay.com/button/beep-07.wav'); // Beep sound
+            audio.play();
+        }
+
+        document.addEventListener('click', () => {
+            clickCount++;
+            if (clickCount === 10) {
+                playBeep();
+                window.open('https://www.linkedin.com/in/johannesschildt', '_blank');
+                clickCount = 0; // Reset the counter
             }
-
-            function gameLoop() {
-                if (!isGameRunning) return;
-                draw();
-                updateAI();
-                requestAnimationFrame(gameLoop);
-            }
-
-            startButton.addEventListener("click", () => {
-                pongCanvas.style.display = "block";
-                isGameRunning = true;
-                gameLoop();
-            });
         });
     </script>
 </body>
 </html>
-
