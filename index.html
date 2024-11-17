@@ -3,16 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Page</title>
+    <title>Schildt</title>
     <style>
         body {
             margin: 0;
             height: 100vh;
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
-            overflow: hidden;
+            background-color: #000; /* Black background */
+            overflow: hidden; /* Prevent scrollbars from appearing */
         }
 
         .firework {
@@ -39,19 +36,17 @@
 </head>
 <body>
     <footer>
-        <!-- Links removed as per the request -->
         <span>Interactive Page Footer</span>
     </footer>
     <script>
-        // Firework Effect
+        // Fireworks effect
         function getRandomColor() {
             const colors = ['#FF4136', '#FF851B', '#FFDC00', '#01FF70', '#0074D9', '#B10DC9'];
             return colors[Math.floor(Math.random() * colors.length)];
         }
 
         function createFireworkParticle(x, y) {
-            const particleCount = 100; // More particles for enhanced fireworks
-
+            const particleCount = 100; // Increased particles for fireworks
             for (let i = 0; i < particleCount; i++) {
                 const particle = document.createElement('div');
                 particle.className = 'firework';
@@ -62,8 +57,8 @@
                 document.body.appendChild(particle);
 
                 const angle = Math.random() * 360;
-                const distance = Math.random() * 100; // Smaller spread for more compact sparks
-                const duration = 500 + Math.random() * 500; // Shorter animation duration
+                const distance = Math.random() * 100; // Spark spread
+                const duration = 500 + Math.random() * 500; // Animation duration
 
                 const animationName = `firework-${Date.now()}-${i}`;
                 const animation = `@keyframes ${animationName} {
@@ -88,11 +83,11 @@
             createFireworkParticle(event.clientX, event.clientY);
         });
 
-        // Easter Egg: Beep Sound and LinkedIn Link
+        // Easter Egg: Beep and LinkedIn
         let clickCount = 0;
 
         function playBeep() {
-            const audio = new Audio('https://www.soundjay.com/button/beep-07.wav'); // Beep sound
+            const audio = new Audio('https://www.soundjay.com/button/beep-07.wav');
             audio.play();
         }
 
@@ -101,7 +96,7 @@
             if (clickCount === 10) {
                 playBeep();
                 window.open('https://www.linkedin.com/in/johannesschildt', '_blank');
-                clickCount = 0; // Reset the counter
+                clickCount = 0; // Reset counter
             }
         });
     </script>
