@@ -20,24 +20,9 @@
             pointer-events: none;
             border-radius: 50%;
         }
-
-        footer {
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            text-align: center;
-            padding: 10px;
-            background-color: rgba(0, 0, 0, 0.5);
-            color: #ffffff;
-            font-size: 8px;
-            font-family: 'Comic Sans MS', cursive, sans-serif;
-        }
     </style>
 </head>
 <body>
-    <footer>
-        <span><3</span>
-    </footer>
     <script>
         // Fireworks effect
         function getRandomColor() {
@@ -83,15 +68,12 @@
             createFireworkParticle(event.clientX, event.clientY);
         });
 
-        // Easter Egg: 
+        // Easter Egg: Opens LinkedIn after 10 clicks
         let clickCount = 0;
-
-        }
 
         document.addEventListener('click', () => {
             clickCount++;
             if (clickCount === 10) {
-                playBeep();
                 window.open('https://www.linkedin.com/in/johannesschildt', '_blank');
                 clickCount = 0; // Reset counter
             }
