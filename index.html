@@ -10,8 +10,10 @@
         body {
             margin: 0;
             height: 100vh;
-            background-color: #000; /* Black background */
-            overflow: hidden; /* Prevent scrollbars from appearing */
+            overflow: hidden;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
         }
 
         .firework {
@@ -26,6 +28,40 @@
 </head>
 <body>
     <script>
+        // Themes for each day of the week
+        const themes = {
+            0: 'clouds',      // Sunday
+            1: 'space',       // Monday
+            2: 'crocodile',   // Tuesday
+            3: 'hamsters',    // Wednesday
+            4: 'batman',      // Thursday
+            5: 'applause',    // Friday
+            6: 'LCD'          // Saturday
+        };
+
+        // Giphy API Key (replace this with your key if needed)
+        const apiKey = '7i7EMSlq48BdYNGdZE85wYLyoGf6M4Nz';
+
+        // Function to fetch and set a random GIF as the background
+        function fetchAndSetGif(theme) {
+            const apiUrl = `https://api.giphy.com/v1/gifs/random?api_key=${apiKey}&tag=${theme}`;
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    const gifUrl = data.data.images.original.url;
+                    document.body.style.backgroundImage = `url('${gifUrl}')`;
+                })
+                .catch(error => console.error('Error fetching Giphy:', error));
+        }
+
+        // Get today's theme
+        const today = new Date().getDay();
+        const theme = themes[today];
+
+        // Set the initial GIF and change it every 6 seconds
+        fetchAndSetGif(theme);
+        setInterval(() => fetchAndSetGif(theme), 6000);
+
         // Fireworks effect
         function getRandomColor() {
             const colors = ['#FF4136', '#FF851B', '#FFDC00', '#01FF70', '#0074D9', '#B10DC9'];
@@ -33,7 +69,7 @@
         }
 
         function createFireworkParticle(x, y) {
-            const particleCount = 100; // Increased particles for fireworks
+            const particleCount = 100;
             for (let i = 0; i < particleCount; i++) {
                 const particle = document.createElement('div');
                 particle.className = 'firework';
@@ -44,8 +80,8 @@
                 document.body.appendChild(particle);
 
                 const angle = Math.random() * 360;
-                const distance = Math.random() * 100; // Spark spread
-                const duration = 500 + Math.random() * 500; // Animation duration
+                const distance = Math.random() * 100;
+                const duration = 500 + Math.random() * 500;
 
                 const animationName = `firework-${Date.now()}-${i}`;
                 const animation = `@keyframes ${animationName} {
@@ -77,10 +113,9 @@
             clickCount++;
             if (clickCount === 10) {
                 window.open('https://www.linkedin.com/in/johannesschildt', '_blank');
-                clickCount = 0; // Reset counter
+                clickCount = 0;
             }
         });
     </script>
 </body>
 </html>
-
