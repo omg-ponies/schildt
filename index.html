@@ -3,68 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Page</title>
+    <title>Pong Game</title>
     <style>
-        body {
-            margin: 0;
-            height: 100vh;
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
-        }
-
         canvas#pong {
             position: fixed;
             z-index: 10000;
             display: none;
-        }
-
-        .confetti {
-            position: fixed;
-            width: 5px;
-            height: 5px;
-            z-index: 9999;
-            pointer-events: none;
-            border-radius: 50%;
-        }
-
-        footer {
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            text-align: center;
-            padding: 10px;
-            background-color: rgba(0, 0, 0, 0.5);
-            color: #ffffff;
-            font-size: 8px;
-            font-family: 'Comic Sans MS', cursive, sans-serif;
-        }
-
-        footer a {
-            color: #ffffff;
-            text-decoration: none;
-        }
-
-        footer a:hover {
-            color: #000000;
-            text-decoration: underline;
+            background: black;
+            border: 2px solid white;
         }
     </style>
 </head>
 <body>
+    <button id="startPong" style="position: fixed; top: 20px; left: 20px; z-index: 10001;">Start Pong Game</button>
     <canvas id="pong" width="300" height="150"></canvas>
-    <footer>
-        <a href="https://www.twitter.com/jschildt" target="_blank">Twitter</a>
-        <a href="https://www.linkedin.com/in/johannesschildt" target="_blank">LinkedIn</a>
-    </footer>
     <script>
         document.addEventListener("DOMContentLoaded", () => {
-            // Initialize Pong
+            const startButton = document.getElementById("startPong");
             const pongCanvas = document.getElementById("pong");
-            pongCanvas.style.display = "block";
-
             const ctx = pongCanvas.getContext("2d");
+
+            let isGameRunning = false;
+
             const paddleWidth = 10, paddleHeight = 50, ballRadius = 5, aiSpeed = 2;
             const player = { x: 20, y: pongCanvas.height / 2 - paddleHeight / 2 };
             const ai = { x: pongCanvas.width - 20 - paddleWidth, y: pongCanvas.height / 2 - paddleHeight / 2 };
@@ -72,24 +32,68 @@
 
             function draw() {
                 ctx.clearRect(0, 0, pongCanvas.width, pongCanvas.height);
+
+                // Player Paddle
                 ctx.fillStyle = "white";
                 ctx.fillRect(player.x, player.y, paddleWidth, paddleHeight);
+
+                // AI Paddle
+                ctx.fillStyle = "white";
                 ctx.fillRect(ai.x, ai.y, paddleWidth, paddleHeight);
+
+                // Ball
                 ctx.beginPath();
                 ctx.arc(ball.x, ball.y, ballRadius, 0, Math.PI * 2);
+                ctx.fillStyle = "white";
                 ctx.fill();
+
+                // Ball Movement
                 ball.x += ball.vx;
                 ball.y += ball.vy;
-                if (ball.y + ballRadius > pongCanvas.height || ball.y - ballRadius < 0) ball.vy = -ball.vy;
-                if (ball.x + ballRadius > pongCanvas.width || ball.x - ballRadius < 0) ball.vx = -ball.vx;
+
+                // Ball Collision with Walls
+                if (ball.y + ballRadius > pongCanvas.height || ball.y - ballRadius < 0) {
+                    ball.vy = -ball.vy;
+                }
+
+                // Ball Collision with Player Paddle
+                if (ball.x - ballRadius < player.x + paddleWidth &&
+                    ball.y > player.y && ball.y < player.y + paddleHeight) {
+                    ball.vx = -ball.vx;
+                }
+
+                // Ball Collision with AI Paddle
+                if (ball.x + ballRadius > ai.x &&
+                    ball.y > ai.y && ball.y < ai.y + paddleHeight) {
+                    ball.vx = -ball.vx;
+                }
+
+                // Reset Ball if Out of Bounds
+                if (ball.x + ballRadius > pongCanvas.width || ball.x - ballRadius < 0) {
+                    ball.x = pongCanvas.width / 2;
+                    ball.y = pongCanvas.height / 2;
+                }
+            }
+
+            function updateAI() {
+                if (ai.y + paddleHeight / 2 < ball.y) ai.y += aiSpeed;
+                else if (ai.y + paddleHeight / 2 > ball.y) ai.y -= aiSpeed;
             }
 
             function gameLoop() {
+                if (!isGameRunning) return;
                 draw();
+                updateAI();
                 requestAnimationFrame(gameLoop);
             }
-            gameLoop();
+
+            startButton.addEventListener("click", () => {
+                pongCanvas.style.display = "block";
+                isGameRunning = true;
+                gameLoop();
+            });
         });
     </script>
 </body>
 </html>
+
