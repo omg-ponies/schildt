@@ -1,228 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  
-  <!-- Pong game styles -->
-<style>
-    canvas#pong {
-        position: fixed;
-        z-index: 10000;
-        pointer-events: none;
-        display: none;
-    }
-</style>
-
-<!-- Pong game script -->
-<script>
-    document.addEventListener("DOMContentLoaded", () => {
-        let pongCanvas = document.createElement("canvas");
-        pongCanvas.id = "pong";
-        pongCanvas.width = 300;
-        pongCanvas.height = 150;
-        document.body.appendChild(pongCanvas);
-    });
-
-    document.addEventListener("click", (event) => {
-        const pongCanvas = document.getElementById("pong");
-        pongCanvas.style.display = "block";
-        pongCanvas.style.left = `${event.clientX}px`;
-        pongCanvas.style.top = `${event.clientY}px`;
-        startPongGame(pongCanvas);
-    });
-
-    function startPongGame(canvas) {
-        const ctx = canvas.getContext("2d");
-        const paddleWidth = 10;
-const paddleHeight = 50;
-const ballRadius = 5;
-const aiSpeed = 2;
-
-const player = { x: 20, y: canvas.height / 2 - paddleHeight / 2 };
-const ai = { x: canvas.width - 20 - paddleWidth, y: canvas.height / 2 - paddleHeight / 2 };
-const ball = { x: canvas.width / 2, y: canvas.height / 2, vx: 2, vy: 2 };
-
-function draw() {
-    // Clear the canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Draw player paddle
-    ctx.fillStyle = "white";
-    ctx.fillRect(player.x, player.y, paddleWidth, paddleHeight);
-
-    // Draw AI paddle
-    ctx.fillStyle = "white";
-    ctx.fillRect(ai.x, ai.y, paddleWidth, paddleHeight);
-
-    // Draw ball
-    ctx.beginPath();
-    ctx.arc(ball.x, ball.y, ballRadius, 0, Math.PI * 2);
-    ctx.fillStyle = "white";
-    ctx.fill();
-
-    // Update ball position
-    ball.x += ball.vx;
-    ball.y += ball.vy;
-
-    // Collision detection
-    if (ball.y + ballRadius > canvas.height || ball.y - ballRadius < 0) {
-        ball.vy = -ball.vy;
-    }
-
-    if (ball.x + ballRadius > canvas.width) {
-        ball.x = canvas.width / 2;
-        ball.y = canvas.height / 2;
-        ball.vx = -ball.vx;
-    } else if (ball.x - ballRadius < 0) {
-        ball.x = canvas.width / 2;
-        ball.y = canvas.height / 2;
-        ball.vx = -ball.vx;
-    }
-
-    // Player paddle collision
-    if (ball.x - ballRadius < player.x + paddleWidth &&
-        ball.y + ballRadius > player.y && ball.y - ballRadius < player.y + paddleHeight) {
-        ball.vx = -ball.vx;
-    }
-
-    // AI paddle collision
-    if (ball.x + ballRadius > ai.x &&
-        ball.y + ballRadius > ai.y && ball.y - ballRadius < ai.y + paddleHeight) {
-        ball.vx = -ball.vx;
-    }
-
-</script>
-
-  
-  
-  
-  <script>
-    const apiKey = '7i7EMSlq48BdYNGdZE85wYLyoGf6M4Nz';
-    const themes = [
-        'cake',
-        'rollercoaster',
-        'hamsters',
-        'batman',
-        'space background',
-        'disco',
-        'fruit'
-    ];
-
-    const today = new Date();
-    const theme = themes[today.getDay()];
-    const apiUrl = `https://api.giphy.com/v1/gifs/random?api_key=${apiKey}&tag=${theme}`;
-
-    function fetchRandomGif() {
-        fetch(apiUrl)
-            .then((response) => response.json())
-            .then((data) => {
-                const gifUrl = data.data.images.original.url;
-                document.body.style.backgroundImage = `url('${gifUrl}')`;
-            })
-            .catch((error) => console.error('Error fetching random GIF:', error));
-    }
-
-    fetchRandomGif(); // Load the first GIF immediately
-    setInterval(fetchRandomGif, 6500); // Change the GIF every 5 seconds
-
-
-     // Confetti
-    function getRandomColor() {
-        const colors = [
-            '#FF4136', // Red
-            '#FF851B', // Orange
-            '#FFDC00', // Yellow
-            '#01FF70', // Green
-            '#0074D9', // Blue
-            '#B10DC9', // Purple
-        ];
-        return colors[Math.floor(Math.random() * colors.length)];
-    }
-
-function createConfettiParticle(x, y) {
-    const particleCount = 50; // Increase the number of particles generated per click
-
-    for (let i = 0; i < particleCount; i++) {
-        const particle = document.createElement('div');
-        particle.className = 'confetti';
-        particle.style.left = `${x}px`;
-        particle.style.top = `${y}px`;
-        particle.style.backgroundColor = getRandomColor();
-
-        document.body.appendChild(particle);
-
-        setTimeout(() => {
-            document.body.removeChild(particle);
-        }, 2000);
-
-        const angle = Math.random() * 360;
-        const distance = Math.random() * 200; // Increase the distance the particles travel
-        const duration = 1000 + Math.random() * 1000; // Decrease the animation duration
-
-        const animationName = `confetti-${Date.now()}`;
-        const animation = `@keyframes ${animationName} {
-            0% { transform: translate(0, 0) rotate(0); opacity: 1; }
-            100% { transform: translate(${Math.cos(angle) * distance}px, ${Math.sin(angle) * distance}px) rotate(360deg); opacity: 0; }
-        }`;
-
-        const style = document.createElement('style');
-        style.textContent = animation;
-        document.head.appendChild(style);
-
-        particle.style.animation = `${animationName} ${duration}ms linear`;
-
-        setTimeout(() => {
-            document.head.removeChild(style);
-        }, duration);
-    }
-}
-
-
-    document.addEventListener('click', (event) => {
-        createConfettiParticle(event.clientX, event.clientY);
-    });
-
-    // End of confetti updated
-</script>
-
-
-    
-
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Page</title>
     <style>
         body {
             margin: 0;
             height: 100vh;
-            background-image: none; /* Will be replaced by JavaScript */
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
             background-attachment: fixed;
         }
-    </style>
-  
 
-
-    <style>
-        body {
-            margin: 0;
-            height: 100vh;
-            background-image: none; /* Will be replaced by JavaScript */
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
+        canvas#pong {
+            position: fixed;
+            z-index: 10000;
+            display: none;
         }
-      
-        
-  .confetti {
-    position: fixed;
-    width: 5px;
-    height: 5px;
-    z-index: 9999;
-    pointer-events: none;
-    border-radius: 50%; // Optional: make the particles circular
-}
 
+        .confetti {
+            position: fixed;
+            width: 5px;
+            height: 5px;
+            z-index: 9999;
+            pointer-events: none;
+            border-radius: 50%;
+        }
 
         footer {
             position: fixed;
@@ -235,35 +40,56 @@ function createConfettiParticle(x, y) {
             font-size: 8px;
             font-family: 'Comic Sans MS', cursive, sans-serif;
         }
-      
-      
- 
 
-    footer a {
-        color: #ffffff;
-        text-decoration: none;
-    }
+        footer a {
+            color: #ffffff;
+            text-decoration: none;
+        }
 
-    footer a:hover {
-        color: #000000;
-        text-decoration: underline;
-    }
-
-
-
-      
-      
+        footer a:hover {
+            color: #000000;
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
+    <canvas id="pong" width="300" height="150"></canvas>
     <footer>
-        <a href="https://www.twitter.com/jschildt" target="_blank" style="margin-right: 10px;">Twitter</a>
+        <a href="https://www.twitter.com/jschildt" target="_blank">Twitter</a>
         <a href="https://www.linkedin.com/in/johannesschildt" target="_blank">LinkedIn</a>
     </footer>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            // Initialize Pong
+            const pongCanvas = document.getElementById("pong");
+            pongCanvas.style.display = "block";
+
+            const ctx = pongCanvas.getContext("2d");
+            const paddleWidth = 10, paddleHeight = 50, ballRadius = 5, aiSpeed = 2;
+            const player = { x: 20, y: pongCanvas.height / 2 - paddleHeight / 2 };
+            const ai = { x: pongCanvas.width - 20 - paddleWidth, y: pongCanvas.height / 2 - paddleHeight / 2 };
+            const ball = { x: pongCanvas.width / 2, y: pongCanvas.height / 2, vx: 2, vy: 2 };
+
+            function draw() {
+                ctx.clearRect(0, 0, pongCanvas.width, pongCanvas.height);
+                ctx.fillStyle = "white";
+                ctx.fillRect(player.x, player.y, paddleWidth, paddleHeight);
+                ctx.fillRect(ai.x, ai.y, paddleWidth, paddleHeight);
+                ctx.beginPath();
+                ctx.arc(ball.x, ball.y, ballRadius, 0, Math.PI * 2);
+                ctx.fill();
+                ball.x += ball.vx;
+                ball.y += ball.vy;
+                if (ball.y + ballRadius > pongCanvas.height || ball.y - ballRadius < 0) ball.vy = -ball.vy;
+                if (ball.x + ballRadius > pongCanvas.width || ball.x - ballRadius < 0) ball.vx = -ball.vx;
+            }
+
+            function gameLoop() {
+                draw();
+                requestAnimationFrame(gameLoop);
+            }
+            gameLoop();
+        });
+    </script>
 </body>
-</html>
-
-
-    
-</head>
 </html>
