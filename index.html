@@ -47,23 +47,41 @@
 
         // Preload GIFs
         async function preloadGifs(theme) {
-            const promises = [];
-            for (let i = 0; i < 5; i++) { // Fetch 5 GIFs for preloading
-                const apiUrl = `https://api.giphy.com/v1/gifs/random?api_key=${apiKey}&tag=${theme}`;
-                promises.push(fetch(apiUrl).then(response => response.json()));
-            }
+            try {
+                const promises = [];
+                for (let i = 0; i < 5; i++) {
+                    const apiUrl = `https://api.giphy.com/v1/gifs/random?api_key=${apiKey}&tag=${theme}`;
+                    promises.push(fetch(apiUrl)
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! Status: ${response.status}`);
+                            }
+                            return response.json();
+                        })
+                        .catch(error => console.error('Error fetching Giphy:', error)));
+                }
 
-            const results = await Promise.all(promises);
-            results.forEach(data => {
-                const gifUrl = data.data.images.original.url;
-                const img = new Image(); // Preload the image
-                img.src = gifUrl;
-                gifCache.push(gifUrl);
-            });
+                const results = await Promise.all(promises);
 
-            // Set the first GIF as the background
-            if (gifCache.length > 0) {
-                document.body.style.backgroundImage = `url('${gifCache[currentGifIndex]}')`;
+                results.forEach(data => {
+                    if (!data || !data.data || !data.data.images || !data.data.images.original) {
+                        console.error('Unexpected Giphy response structure:', data);
+                        return;
+                    }
+                    const gifUrl = data.data.images.original.url;
+                    const img = new Image(); // Preload the image
+                    img.src = gifUrl;
+                    gifCache.push(gifUrl);
+                });
+
+                // Set the first GIF as the background
+                if (gifCache.length > 0) {
+                    document.body.style.backgroundImage = `url('${gifCache[currentGifIndex]}')`;
+                } else {
+                    console.error('No GIFs preloaded.');
+                }
+            } catch (error) {
+                console.error('Error in preloadGifs:', error);
             }
         }
 
@@ -72,12 +90,18 @@
             if (gifCache.length > 0) {
                 currentGifIndex = (currentGifIndex + 1) % gifCache.length;
                 document.body.style.backgroundImage = `url('${gifCache[currentGifIndex]}')`;
+            } else {
+                console.error('No GIFs available to cycle.');
             }
         }
 
         // Set favicon dynamically
         function setFavicon(emoji) {
             const favicon = document.getElementById('dynamic-favicon');
+            if (!favicon) {
+                console.error('Favicon element not found.');
+                return;
+            }
             const svgIcon = `
                 <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>
                     <text y='75' font-size='80'>${emoji}</text>
@@ -87,7 +111,7 @@
 
         // Initialize
         setFavicon(emoji);
-        preloadGifs(theme); // Preload GIFs
+        preloadGifs(theme);
         setInterval(cycleGif, 6000); // Change GIF every 6 seconds
 
         // Fireworks effect
@@ -147,3 +171,4 @@
     </script>
 </body>
 </html>
+
