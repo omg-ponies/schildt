@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Schildt</title>
-    <!-- Favicon Placeholder -->
     <link id="dynamic-favicon" rel="icon" href="">
     <style>
         body {
@@ -14,6 +13,8 @@
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
+            background-color: #000; /* Default black background */
+            transition: background-image 0.5s ease-in-out; /* Smooth transition */
         }
 
         .firework {
@@ -28,7 +29,6 @@
 </head>
 <body>
     <script>
-        // Themes for each day of the week with emojis
         const themes = {
             0: { theme: 'clouds', emoji: '☁️' },      // Sunday
             1: { theme: 'space', emoji: '🚀' },       // Monday
@@ -39,23 +39,40 @@
             6: { theme: 'trippy', emoji: '🌈' }       // Saturday
         };
 
-        // Get today's theme and emoji
+        const apiKey = '7i7EMSlq48BdYNGdZE85wYLyoGf6M4Nz';
         const today = new Date().getDay();
         const { theme, emoji } = themes[today];
+        const gifCache = [];
+        let currentGifIndex = 0;
 
-        // Giphy API Key (replace this with your key if needed)
-        const apiKey = '7i7EMSlq48BdYNGdZE85wYLyoGf6M4Nz';
+        // Preload GIFs
+        async function preloadGifs(theme) {
+            const promises = [];
+            for (let i = 0; i < 5; i++) { // Fetch 5 GIFs for preloading
+                const apiUrl = `https://api.giphy.com/v1/gifs/random?api_key=${apiKey}&tag=${theme}`;
+                promises.push(fetch(apiUrl).then(response => response.json()));
+            }
 
-        // Function to fetch and set a random GIF as the background
-        function fetchAndSetGif(theme) {
-            const apiUrl = `https://api.giphy.com/v1/gifs/random?api_key=${apiKey}&tag=${theme}`;
-            fetch(apiUrl)
-                .then(response => response.json())
-                .then(data => {
-                    const gifUrl = data.data.images.original.url;
-                    document.body.style.backgroundImage = `url('${gifUrl}')`;
-                })
-                .catch(error => console.error('Error fetching Giphy:', error));
+            const results = await Promise.all(promises);
+            results.forEach(data => {
+                const gifUrl = data.data.images.original.url;
+                const img = new Image(); // Preload the image
+                img.src = gifUrl;
+                gifCache.push(gifUrl);
+            });
+
+            // Set the first GIF as the background
+            if (gifCache.length > 0) {
+                document.body.style.backgroundImage = `url('${gifCache[currentGifIndex]}')`;
+            }
+        }
+
+        // Cycle through preloaded GIFs
+        function cycleGif() {
+            if (gifCache.length > 0) {
+                currentGifIndex = (currentGifIndex + 1) % gifCache.length;
+                document.body.style.backgroundImage = `url('${gifCache[currentGifIndex]}')`;
+            }
         }
 
         // Set favicon dynamically
@@ -68,12 +85,10 @@
             favicon.href = `data:image/svg+xml,${encodeURIComponent(svgIcon)}`;
         }
 
-        // Set the initial GIF and favicon
-        fetchAndSetGif(theme);
+        // Initialize
         setFavicon(emoji);
-
-        // Change GIF every 6 seconds
-        setInterval(() => fetchAndSetGif(theme), 6000);
+        preloadGifs(theme); // Preload GIFs
+        setInterval(cycleGif, 6000); // Change GIF every 6 seconds
 
         // Fireworks effect
         function getRandomColor() {
