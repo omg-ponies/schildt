@@ -1,187 +1,291 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Schildt</title>
-  <link id="dynamic-favicon" rel="icon" href="">
+  <link id="dynamic-favicon" rel="icon" type="image/svg+xml" href="" />
   <style>
-    body {
+    :root { --fade-ms: 600; --fw-count: 70; }
+    * { box-sizing: border-box; }
+    html, body {
+      height: 100%;
       margin: 0;
-      height: 100vh;
-      overflow: hidden;
-      background-size: cover;
-      background-position: center;
-      background-repeat: no-repeat;
-      background-color: #000;
-      transition: background-image 0.5s ease-in-out;
+      background: #000;
     }
-    .firework {
+    /* Two-layer crossfade background */
+    .stage {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      background: #000;
+    }
+    .bg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0;
+      transition: opacity var(--fade-ms)ms ease-in-out;
+      will-change: opacity, transform;
+    }
+    .bg.active { opacity: 1; }
+
+    /* Fireworks */
+    .particle {
       position: fixed;
       width: 2px;
       height: 2px;
-      z-index: 9999;
-      pointer-events: none;
       border-radius: 50%;
+      pointer-events: none;
+      will-change: transform, opacity;
+    }
+
+    /* Motion preference */
+    @media (prefers-reduced-motion: reduce) {
+      .bg { transition: none; }
     }
   </style>
 </head>
 <body>
+  <div class="stage" aria-hidden="true">
+    <img id="bgA" class="bg active" alt="" />
+    <img id="bgB" class="bg" alt="" />
+  </div>
+
   <script>
-    const themes = {
-      0: { theme: 'clouds', emoji: '☁️' },
-      1: { theme: 'space', emoji: '🚀' },
-      2: { theme: 'crocodile', emoji: '🐊' },
-      3: { theme: 'hamsters', emoji: '🐹' },
-      4: { theme: 'batman', emoji: '🦇' },
-      5: { theme: 'applause', emoji: '👏' },
-      6: { theme: 'trippy', emoji: '🌈' }
+    // ----------------- Config -----------------
+    const THEMES = {
+      0: { theme: "clouds",   emoji: "☁️" },
+      1: { theme: "space",    emoji: "🚀" },
+      2: { theme: "crocodile",emoji: "🐊" },
+      3: { theme: "hamsters", emoji: "🐹" },
+      4: { theme: "batman",   emoji: "🦇" },
+      5: { theme: "applause", emoji: "👏" },
+      6: { theme: "trippy",   emoji: "🌈" }
     };
 
-    const apiKey = '7i7EMSlq48BdYNGdZE85wYLyoGf6M4Nz';
-    const today = new Date().getDay();
-    const { theme, emoji } = themes[today];
-    const gifCache = [];
-    let currentGifIndex = 0;
+    // Exposing a raw API key in client code means anyone can use it.
+    // In production, proxy this request server-side and keep the key secret.
+    const GIPHY_KEY = "7i7EMSlq48BdYNGdZE85wYLyoGf6M4Nz";
+    const DAY = new Date().getDay();
+    const { theme, emoji } = THEMES[DAY] || THEMES[0];
 
-    // Preload initial GIFs
-    async function preloadInitialGifs(theme) {
-      try {
-        const promises = [];
-        for (let i = 0; i < 5; i++) {
-          const apiUrl = `https://api.giphy.com/v1/gifs/random?api_key=${apiKey}&tag=${theme}`;
-          promises.push(
-            fetch(apiUrl)
-              .then(response => {
-                if (!response.ok) {
-                  throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-                return response.json();
-              })
-              .catch(error => console.error('Error fetching Giphy:', error))
-          );
-        }
-        const results = await Promise.all(promises);
-        results.forEach(data => {
-          if (!data || !data.data || !data.data.images || !data.data.images.original) {
-            console.error('Unexpected Giphy response structure:', data);
-            return;
-          }
-          const gifUrl = data.data.images.original.url;
-          const img = new Image();
-          img.src = gifUrl;
-          gifCache.push(gifUrl);
-        });
-        if (gifCache.length > 0) {
-          document.body.style.backgroundImage = `url('${gifCache[currentGifIndex]}')`;
-        } else {
-          console.error('No GIFs preloaded.');
-        }
-      } catch (error) {
-        console.error('Error in preloadInitialGifs:', error);
-      }
+    const PRELOAD_COUNT = 5;      // initial burst
+    const CACHE_MAX = 20;         // cap memory/network use
+    const SWAP_MS = 6000;         // rotation interval
+    const FETCH_TIMEOUT_MS = 8000;
+
+    const cache = [];
+    let idx = -1;
+    let timer = null;
+    let activeId = "bgA";
+
+    const elA = document.getElementById("bgA");
+    const elB = document.getElementById("bgB");
+
+    // --------------- Utils -------------------
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    function withTimeout(promise, ms) {
+      const controller = new AbortController();
+      const t = setTimeout(() => controller.abort(), ms);
+      return Promise.race([
+        promise(controller.signal),
+        (async () => { await sleep(ms + 1); throw new Error("timeout"); })()
+      ]).finally(() => clearTimeout(t));
     }
 
-    // Fetch and add a new GIF to the cache
-    async function fetchAndAddGif(theme) {
-      try {
-        const apiUrl = `https://api.giphy.com/v1/gifs/random?api_key=${apiKey}&tag=${theme}`;
-        const response = await fetch(apiUrl);
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        const data = await response.json();
-        if (!data || !data.data || !data.data.images || !data.data.images.original) {
-          console.error('Unexpected Giphy response structure:', data);
-          return;
-        }
-        const gifUrl = data.data.images.original.url;
-        const img = new Image();
-        img.src = gifUrl;
-        gifCache.push(gifUrl);
-      } catch (error) {
-        console.error('Error fetching new GIF:', error);
-      }
-    }
-
-    // Cycle through preloaded GIFs and fetch a new one each time
-    function cycleGif() {
-      if (gifCache.length > 0) {
-        currentGifIndex = (currentGifIndex + 1) % gifCache.length;
-        document.body.style.backgroundImage = `url('${gifCache[currentGifIndex]}')`;
-      } else {
-        console.error('No GIFs available to cycle.');
-      }
-      // Fetch a new GIF after each cycle to continuously grow the cache
-      fetchAndAddGif(theme);
-    }
-
-    // Set favicon dynamically using the emoji
-    function setFavicon(emoji) {
-      const favicon = document.getElementById('dynamic-favicon');
-      if (!favicon) {
-        console.error('Favicon element not found.');
-        return;
-      }
-      const svgIcon = `
-        <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>
-          <text y='75' font-size='80'>${emoji}</text>
+    function setFavicon(emojiChar) {
+      const link = document.getElementById("dynamic-favicon");
+      const svg = `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+          <rect width="128" height="128" rx="24" fill="black"/>
+          <text x="50%" y="64%" text-anchor="middle" font-size="100">${emojiChar}</text>
         </svg>`;
-      favicon.href = `data:image/svg+xml,${encodeURIComponent(svgIcon)}`;
+      link.href = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
     }
 
-    // Fireworks effect on click
-    function getRandomColor() {
-      const colors = ['#FF4136', '#FF851B', '#FFDC00', '#01FF70', '#0074D9', '#B10DC9'];
-      return colors[Math.floor(Math.random() * colors.length)];
+    function setFallbackSolid() {
+      // Slight vignette-ish feel using a tiny SVG (keeps it light)
+      const svg = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8">
+          <rect width="8" height="8" fill="#000"/>
+        </svg>`;
+      const url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+      elA.src = url;
+      elB.src = url;
     }
 
-    function createFireworkParticle(x, y) {
-      const particleCount = 100;
-      for (let i = 0; i < particleCount; i++) {
-        const particle = document.createElement('div');
-        particle.className = 'firework';
-        particle.style.left = `${x}px`;
-        particle.style.top = `${y}px`;
-        particle.style.backgroundColor = getRandomColor();
-        document.body.appendChild(particle);
-        const angle = Math.random() * 360;
-        const distance = Math.random() * 100;
-        const duration = 500 + Math.random() * 500;
-        const animationName = `firework-${Date.now()}-${i}`;
-        const animation = `@keyframes ${animationName} {
-          0% { transform: translate(0, 0) scale(1); opacity: 1; }
-          100% { transform: translate(${Math.cos(angle) * distance}px, ${Math.sin(angle) * distance}px) scale(0.5); opacity: 0; }
-        }`;
-        const style = document.createElement('style');
-        style.textContent = animation;
-        document.head.appendChild(style);
-        particle.style.animation = `${animationName} ${duration}ms ease-out`;
-        setTimeout(() => {
-          document.head.removeChild(style);
-          document.body.removeChild(particle);
-        }, duration);
+    // --------------- GIPHY -------------------
+    async function fetchRandomGifUrl(tag) {
+      const url = new URL("https://api.giphy.com/v1/gifs/random");
+      url.searchParams.set("api_key", GIPHY_KEY);
+      url.searchParams.set("tag", tag);
+
+      const fetcher = (signal) => fetch(url.toString(), { signal }).then(r => {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+      });
+
+      const data = await withTimeout(fetcher, FETCH_TIMEOUT_MS);
+      const gif = data?.data?.images?.original?.url;
+      if (!gif) throw new Error("Invalid GIPHY response");
+      return gif;
+    }
+
+    async function preloadInitial(tag) {
+      const tasks = Array.from({ length: PRELOAD_COUNT }, () =>
+        fetchRandomGifUrl(tag).catch(() => null)
+      );
+      const urls = await Promise.all(tasks);
+      for (const u of urls) {
+        if (u) pushCache(u);
+      }
+      if (!cache.length) setFallbackSolid();
+    }
+
+    function pushCache(url) {
+      cache.push(url);
+      if (cache.length > CACHE_MAX) cache.shift();
+    }
+
+    async function fetchAndCache(tag) {
+      try {
+        const url = await fetchRandomGifUrl(tag);
+        // Preload the image so swaps are seamless
+        await new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = resolve;
+          img.onerror = reject;
+          img.src = url;
+        });
+        pushCache(url);
+      } catch {
+        // ignore single fetch failures
       }
     }
 
-    document.addEventListener('click', (event) => {
-      createFireworkParticle(event.clientX, event.clientY);
-    });
+    // --------------- Crossfade ----------------
+    function nextUrl() {
+      if (!cache.length) return null;
+      idx = (idx + 1) % cache.length;
+      return cache[idx];
+    }
 
-    // Easter egg: Opens LinkedIn after 10 clicks
+    function swapBackground() {
+      const next = nextUrl();
+      if (!next) return;
+
+      const show = activeId === "bgA" ? elB : elA;
+      const hide = activeId === "bgA" ? elA : elB;
+
+      show.src = next;
+      // Force reflow so the opacity transition triggers consistently
+      // eslint-disable-next-line no-unused-expressions
+      show.offsetHeight;
+
+      hide.classList.remove("active");
+      show.classList.add("active");
+      activeId = activeId === "bgA" ? "bgB" : "bgA";
+
+      // Keep the pipeline warm
+      fetchAndCache(theme);
+    }
+
+    function startCycler() {
+      stopCycler();
+      timer = setInterval(swapBackground, SWAP_MS);
+    }
+    function stopCycler() {
+      if (timer) { clearInterval(timer); timer = null; }
+    }
+
+    // --------------- Fireworks ----------------
+    function randBetween(min, max) {
+      return Math.random() * (max - min) + min;
+    }
+    function randColor() {
+      const colors = ["#FF4136","#FF851B","#FFDC00","#01FF70","#0074D9","#B10DC9"];
+      return colors[(Math.random() * colors.length) | 0];
+    }
+    function fireworks(x, y) {
+      const count = Math.round(getComputedStyle(document.documentElement)
+        .getPropertyValue("--fw-count")) || 70;
+
+      const lifespan = 700; // ms
+      const start = performance.now();
+
+      const particles = Array.from({ length: count }, () => {
+        const el = document.createElement("div");
+        el.className = "particle";
+        el.style.background = randColor();
+        el.style.left = x + "px";
+        el.style.top = y + "px";
+        document.body.appendChild(el);
+        return {
+          el,
+          angle: Math.random() * Math.PI * 2,
+          speed: randBetween(50, 140),
+          drag: randBetween(0.88, 0.95)
+        };
+      });
+
+      function frame(t) {
+        const dt = t - start;
+        const p = Math.min(1, dt / lifespan);
+        for (const pt of particles) {
+          // simple ballistic-ish motion
+          const s = pt.speed * Math.pow(pt.drag, dt / 16);
+          const dx = Math.cos(pt.angle) * s * (dt / 1000);
+          const dy = Math.sin(pt.angle) * s * (dt / 1000) + 0.3 * (dt / 16); // gravity
+          pt.el.style.transform = `translate(${dx}px, ${dy}px)`;
+          pt.el.style.opacity = String(1 - p);
+        }
+        if (p < 1) {
+          requestAnimationFrame(frame);
+        } else {
+          for (const pt of particles) pt.el.remove();
+        }
+      }
+      requestAnimationFrame(frame);
+    }
+
+    // One unified pointer handler (mouse + touch)
     let clickCount = 0;
-    document.addEventListener('click', () => {
+    window.addEventListener("pointerdown", (e) => {
+      fireworks(e.clientX, e.clientY);
       clickCount++;
       if (clickCount === 10) {
-        window.open('https://www.linkedin.com/in/johannesschildt', '_blank');
+        // Opens your LinkedIn. Full URL as requested.
+        window.open("https://www.linkedin.com/in/johannesschildt", "_blank");
         clickCount = 0;
       }
+    }, { passive: true });
+
+    // Pause when hidden to save network and battery
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) stopCycler();
+      else startCycler();
     });
 
-    // Initialize favicon, preload initial GIFs, and set GIF cycling every 6 seconds
-    setFavicon(emoji);
-    preloadInitialGifs(theme);
-    setInterval(cycleGif, 6000);
+    // --------------- Boot ---------------------
+    (async function boot() {
+      setFavicon(emoji);
+      await preloadInitial(theme);
+
+      // Set first visible image if available
+      if (cache.length) {
+        const first = cache[0];
+        elA.src = first;
+        elA.classList.add("active");
+      }
+
+      // Warm the cache further in the background
+      for (let i = 0; i < 3; i++) fetchAndCache(theme);
+
+      startCycler();
+    })();
   </script>
 </body>
 </html>
