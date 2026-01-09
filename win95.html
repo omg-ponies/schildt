@@ -1026,6 +1026,7 @@
                 minesLeft += flagged[r][c] ? -1 : 1;
                 minesEl.textContent = String(Math.max(0, minesLeft)).padStart(3, '0');
                 renderGrid();
+                checkWin();
             }
 
             function reveal(r, c) {
@@ -1042,9 +1043,34 @@
 
             function checkWin() {
                 if (gameOver) return;
-                let safe = 0;
-                for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) if (!revealed[r][c] && grid[r][c] !== -1) safe++;
-                if (safe === 0) { gameOver = true; faceEl.textContent = '😎'; if (timerInterval) clearInterval(timerInterval); }
+
+                // Count unrevealed safe (non-mine) cells
+                let unrevealedSafe = 0;
+                for (let r = 0; r < ROWS; r++) {
+                    for (let c = 0; c < COLS; c++) {
+                        if (!revealed[r][c] && grid[r][c] !== -1) {
+                            unrevealedSafe++;
+                        }
+                    }
+                }
+
+                // Win condition: all safe cells revealed
+                if (unrevealedSafe === 0) {
+                    gameOver = true;
+                    faceEl.textContent = '😎';
+                    if (timerInterval) clearInterval(timerInterval);
+
+                    // Auto-flag all remaining mines for visual feedback
+                    for (let r = 0; r < ROWS; r++) {
+                        for (let c = 0; c < COLS; c++) {
+                            if (!revealed[r][c] && grid[r][c] === -1) {
+                                flagged[r][c] = true;
+                            }
+                        }
+                    }
+                    minesEl.textContent = '000';
+                    renderGrid();
+                }
             }
 
             faceEl.addEventListener('click', initGame);
