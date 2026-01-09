@@ -29,10 +29,60 @@
         /* Window dragging outline */
         .window-drag-outline {
             position: absolute;
-            border: 2px dashed #000;
-            background: transparent;
+            border: 3px solid #000;
+            background: rgba(255, 255, 255, 0.3);
             pointer-events: none;
             z-index: 10000;
+            box-shadow: inset 0 0 0 1px #fff;
+        }
+
+        /* Boot screen */
+        .boot-screen {
+            position: fixed;
+            inset: 0;
+            background: #000;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100000;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        .boot-screen.hidden { display: none; }
+
+        /* Shutdown overlay */
+        .shutdown-overlay {
+            position: fixed;
+            inset: 0;
+            background: #000;
+            z-index: 99999;
+            opacity: 0;
+            transition: opacity 2.5s ease-out;
+            pointer-events: none;
+        }
+        .shutdown-overlay.active { opacity: 1; pointer-events: all; }
+
+        /* Start menu animation - slower for Win95 feel */
+        .start-menu {
+            animation: none;
+        }
+        .start-menu.open {
+            animation: slideUp 0.25s ease-out;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(25px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Desktop selection rectangle */
+        .selection-rect {
+            position: absolute;
+            border: 1px dotted #000;
+            background: rgba(0, 0, 128, 0.1);
+            pointer-events: none;
+            z-index: 50;
         }
 
         .desktop {
@@ -206,6 +256,13 @@
         <canvas id="screensaverCanvas"></canvas>
     </div>
 
+    <div class="boot-screen" id="bootScreen">
+        <div style="margin-bottom:40px;font-size:24px;letter-spacing:4px;">Schildt95</div>
+        <div style="opacity:0.7;">Starting Windows 95...</div>
+    </div>
+
+    <div class="shutdown-overlay" id="shutdownOverlay"></div>
+
     <script>
         // Config
         const desktopIconsConfig = [
@@ -264,11 +321,17 @@
             aoe: { title: 'Age of Empires', icon: '⚔️', isCdRom: true, cdName: 'Age of Empires' },
         };
 
-        let windows = [], activeWindow = null, zIndexCounter = 100, dragState = null, iconDragState = null;
+        let windows = [], activeWindow = null, zIndexCounter = 100, dragState = null, iconDragState = null, lastDragUpdate = 0;
         let screensaverTimeout = null;
+        let selectionRect = null, selectionStart = null;
         const SCREENSAVER_DELAY = 120000;
 
         function init() {
+            // Show boot screen for 2 seconds
+            setTimeout(() => {
+                document.getElementById('bootScreen').classList.add('hidden');
+            }, 2000);
+
             createDesktopIcons();
             createStartMenu();
             setupEventListeners();
@@ -344,7 +407,16 @@
         }
 
         function shutdown() {
-            document.body.innerHTML = '<div style="background:#000;color:#fff;height:100vh;display:flex;align-items:center;justify-content:center;font-family:Arial;font-size:24px;text-align:center;">It is now safe to turn off<br>your computer.</div>';
+            closeStartMenu();
+            const overlay = document.getElementById('shutdownOverlay');
+
+            // Slow fade to black (takes 3-4 seconds)
+            setTimeout(() => overlay.classList.add('active'), 100);
+
+            // Keep black screen
+            setTimeout(() => {
+                document.body.style.background = '#000';
+            }, 3000);
         }
 
         function updateClock() {
@@ -370,9 +442,15 @@
             // Show hourglass cursor
             document.body.classList.add('hourglass');
 
-            // Variable delay based on app complexity
-            const heavyApps = ['paint', 'solitaire', 'minesweeper', 'games'];
-            const delay = heavyApps.includes(appId) ? (400 + Math.random() * 200) : (200 + Math.random() * 100);
+            // Variable delay based on app complexity - REALLY slow for authentic Win95 feel
+            let delay;
+            if (app.isCdRom) {
+                // CD-ROM games were PAINFULLY slow in Win95
+                delay = 2000 + Math.random() * 2000; // 2-4 seconds
+            } else {
+                const heavyApps = ['paint', 'solitaire', 'minesweeper', 'games'];
+                delay = heavyApps.includes(appId) ? (800 + Math.random() * 700) : (400 + Math.random() * 400); // 0.8-1.5s for heavy, 0.4-0.8s for light
+            }
 
             // Add Win95-style delay before window appears
             setTimeout(() => {
@@ -391,7 +469,7 @@
                 windowEl.style.height = app.height + 'px';
                 windowEl.style.zIndex = ++zIndexCounter;
                 windowEl.style.opacity = '0';
-                windowEl.style.transition = 'opacity 0.15s ease-in';
+                windowEl.style.transition = 'opacity 0.25s ease-in';
 
                 const menuItems = app.menuBar || ['File', 'Edit', 'View', 'Help'];
                 const menuBarHTML = `<div class="menu-bar">${menuItems.map(m => `<span class="menu-item">${m}</span>`).join('')}</div>`;
@@ -954,6 +1032,7 @@
                 minesLeft += flagged[r][c] ? -1 : 1;
                 minesEl.textContent = String(Math.max(0, minesLeft)).padStart(3, '0');
                 renderGrid();
+                checkWin();
             }
 
             function reveal(r, c) {
@@ -970,9 +1049,34 @@
 
             function checkWin() {
                 if (gameOver) return;
-                let safe = 0;
-                for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) if (!revealed[r][c] && grid[r][c] !== -1) safe++;
-                if (safe === 0) { gameOver = true; faceEl.textContent = '😎'; if (timerInterval) clearInterval(timerInterval); }
+
+                // Count unrevealed safe (non-mine) cells
+                let unrevealedSafe = 0;
+                for (let r = 0; r < ROWS; r++) {
+                    for (let c = 0; c < COLS; c++) {
+                        if (!revealed[r][c] && grid[r][c] !== -1) {
+                            unrevealedSafe++;
+                        }
+                    }
+                }
+
+                // Win condition: all safe cells revealed
+                if (unrevealedSafe === 0) {
+                    gameOver = true;
+                    faceEl.textContent = '😎';
+                    if (timerInterval) clearInterval(timerInterval);
+
+                    // Auto-flag all remaining mines for visual feedback
+                    for (let r = 0; r < ROWS; r++) {
+                        for (let c = 0; c < COLS; c++) {
+                            if (!revealed[r][c] && grid[r][c] === -1) {
+                                flagged[r][c] = true;
+                            }
+                        }
+                    }
+                    minesEl.textContent = '000';
+                    renderGrid();
+                }
             }
 
             faceEl.addEventListener('click', initGame);
@@ -1174,20 +1278,39 @@
 
         function setupEventListeners() {
             document.getElementById('startButton').addEventListener('click', (e) => { e.stopPropagation(); toggleStartMenu(); });
-            document.getElementById('desktop').addEventListener('click', (e) => {
+
+            const desktop = document.getElementById('desktop');
+            desktop.addEventListener('click', (e) => {
                 if (e.target.id === 'desktop' || e.target.id === 'desktopIcons') { closeStartMenu(); selectIcon(null); }
+            });
+
+            // Desktop selection rectangle
+            desktop.addEventListener('mousedown', (e) => {
+                if (e.target.id !== 'desktop' && e.target.id !== 'desktopIcons') return;
+                if (e.button !== 0) return; // Only left click
+
+                selectionStart = { x: e.clientX, y: e.clientY };
+                selectionRect = document.createElement('div');
+                selectionRect.className = 'selection-rect';
+                desktop.appendChild(selectionRect);
+                closeStartMenu();
             });
 
             document.addEventListener('mousemove', (e) => {
                 resetScreensaverTimer();
                 if (document.getElementById('screensaver').classList.contains('active')) stopScreensaver();
                 if (dragState) {
+                    // Throttle drag updates for authentic Win95 VERY choppy feel (~15 FPS)
+                    const now = Date.now();
+                    const throttleDelay = 60; // ms between updates (was 30, now even slower)
+
                     if (dragState.type === 'move') {
                         // Move outline instead of window (Win95 lag effect)
-                        if (dragState.outline) {
+                        if (dragState.outline && (now - lastDragUpdate >= throttleDelay)) {
                             dragState.outline.style.left = (e.clientX - dragState.startX) + 'px';
                             dragState.outline.style.top = (e.clientY - dragState.startY) + 'px';
-                        } else {
+                            lastDragUpdate = now;
+                        } else if (!dragState.outline) {
                             dragState.window.style.left = (e.clientX - dragState.startX) + 'px';
                             dragState.window.style.top = (e.clientY - dragState.startY) + 'px';
                         }
@@ -1202,6 +1325,18 @@
                         iconDragState.icon.style.top = (iconDragState.iconStartY + dy) + 'px';
                     }
                 }
+
+                // Draw selection rectangle
+                if (selectionRect && selectionStart) {
+                    const x = Math.min(e.clientX, selectionStart.x);
+                    const y = Math.min(e.clientY, selectionStart.y);
+                    const width = Math.abs(e.clientX - selectionStart.x);
+                    const height = Math.abs(e.clientY - selectionStart.y);
+                    selectionRect.style.left = x + 'px';
+                    selectionRect.style.top = y + 'px';
+                    selectionRect.style.width = width + 'px';
+                    selectionRect.style.height = height + 'px';
+                }
             });
 
             document.addEventListener('mouseup', () => {
@@ -1213,6 +1348,13 @@
                 }
                 if (iconDragState) iconDragState.icon.classList.remove('dragging');
                 iconDragState = null; dragState = null;
+
+                // Clear selection rectangle
+                if (selectionRect) {
+                    selectionRect.remove();
+                    selectionRect = null;
+                    selectionStart = null;
+                }
             });
 
             document.addEventListener('keydown', () => {
