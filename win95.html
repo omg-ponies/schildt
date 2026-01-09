@@ -194,7 +194,7 @@
         // Config
         const desktopIconsConfig = [
             { id: 'terminal', icon: '💻', label: 'Terminal', x: 10, y: 10 },
-            { id: 'about', icon: '📄', label: 'About Me', x: 10, y: 90 },
+            { id: 'about', icon: '📄', label: 'README', x: 10, y: 90 },
             { id: 'projects', icon: '📁', label: 'Projects', x: 10, y: 170 },
             { id: 'games', icon: '🎮', label: 'Games', x: 10, y: 250 },
             { id: 'paint', icon: '🎨', label: 'Paint', x: 10, y: 330 },
@@ -213,7 +213,7 @@
                 { id: 'solitaire', icon: '🃏', label: 'Solitaire' },
             ]},
             { type: 'item', id: 'documents', icon: '📄', label: 'Documents', arrow: true, submenu: [
-                { id: 'about', icon: '📄', label: 'About Me.txt' },
+                { id: 'about', icon: '📄', label: 'README.txt' },
             ]},
             { type: 'item', id: 'settings', icon: '⚙️', label: 'Settings', arrow: true, submenu: [
                 { id: 'screensaver', icon: '🖥️', label: 'Screen Saver' },
@@ -224,9 +224,9 @@
 
         const apps = {
             terminal: { title: 'Terminal', icon: '💻', width: 600, height: 400, content: '<div style="background:#0a0a0a;color:#33ff33;font-family:Consolas,monospace;padding:10px;height:100%;font-size:14px;">C:\\> _</div>' },
-            about: { title: 'About Me - Notepad', icon: '📄', width: 500, height: 350, content: '<div style="padding:10px;font-family:Courier New,monospace;font-size:12px;white-space:pre-wrap;">JOHANNES SCHILDT\n════════════════════════════════\n\nSwedish. Founder. Building things.\n\nCurrently:\n  ► CEO & Founder @ Admin.ai\n  ► Founder & Chairman @ Kry\n\nLocation: Variable\n\n────────────────────────────────\n"Replacing clinicians with compute"</div>' },
+            about: { title: 'README.txt - Notepad', icon: '📄', width: 500, height: 350, content: '<div style="padding:10px;font-family:Courier New,monospace;font-size:12px;white-space:pre-wrap;"> ███████╗ ██████╗██╗  ██╗██╗██╗     ██████╗ ████████╗\n ██╔════╝██╔════╝██║  ██║██║██║     ██╔══██╗╚══██╔══╝\n ███████╗██║     ███████║██║██║     ██║  ██║   ██║   \n ╚════██║██║     ██╔══██║██║██║     ██║  ██║   ██║   \n ███████║╚██████╗██║  ██║██║███████╗██████╔╝   ██║   \n ╚══════╝ ╚═════╝╚═╝  ╚═╝╚═╝╚══════╝╚═════╝    ╚═╝   \n\n\nhttps://linkedin.com/in/johannesschildt</div>' },
             notepad: { title: 'Untitled - Notepad', icon: '📝', width: 500, height: 350, content: '<textarea style="width:100%;height:100%;border:none;resize:none;padding:10px;font-family:Courier New,monospace;font-size:12px;outline:none;"></textarea>' },
-            projects: { title: 'Projects', icon: '📁', width: 550, height: 400, content: '<div style="padding:20px;display:grid;grid-template-columns:repeat(3,1fr);gap:20px;text-align:center;"><div style="cursor:pointer;" onclick="window.open(\'https://kry.se\')"><div style="font-size:48px;">🏥</div><div>Kry</div></div><div style="cursor:pointer;" onclick="window.open(\'https://admin.ai\')"><div style="font-size:48px;">🤖</div><div>Admin.ai</div></div></div>' },
+            projects: { title: 'Projects', icon: '📁', width: 550, height: 400, content: '<div style="padding:20px;display:grid;grid-template-columns:repeat(3,1fr);gap:20px;text-align:center;"><div style="cursor:pointer;" onclick="window.open(\'https://kry.se\')"><div style="font-size:48px;">🏥</div><div>Kry</div></div><div style="cursor:pointer;" onclick="window.open(\'https://elf.care\')"><div style="font-size:48px;">🧝</div><div>Elfcare</div></div><div style="cursor:pointer;" onclick="window.open(\'https://alwayssummer.se\')"><div style="font-size:48px;">☀️</div><div>ASAM</div></div></div>' },
             games: { title: 'Games', icon: '🎮', width: 500, height: 350, isFolder: true, createContent: createGamesFolder },
             paint: { title: 'untitled - Paint', icon: '🎨', width: 800, height: 550, menuBar: ['File', 'Edit', 'View', 'Image', 'Colors', 'Help'], createContent: createPaint },
             minesweeper: { title: 'Minesweeper', icon: '💣', width: 280, height: 380, menuBar: ['Game', 'Help'], createContent: createMinesweeper },
