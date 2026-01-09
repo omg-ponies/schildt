@@ -332,46 +332,67 @@
             const app = apps[appId];
             if (!app) return;
 
-            const windowId = `window-${Date.now()}`;
-            const windowEl = document.createElement('div');
-            windowEl.className = 'window';
-            windowEl.id = windowId;
-            windowEl.dataset.app = appId;
+            // Check if window for this app is already open
+            const existingWindow = windows.find(w => w.appId === appId);
+            if (existingWindow) {
+                // If minimized, restore it; otherwise just focus it
+                if (existingWindow.minimized) {
+                    restoreWindow(existingWindow);
+                } else {
+                    setActiveWindow(existingWindow);
+                }
+                return;
+            }
 
-            const offset = windows.length * 30;
-            windowEl.style.left = (100 + offset) + 'px';
-            windowEl.style.top = (50 + offset) + 'px';
-            windowEl.style.width = app.width + 'px';
-            windowEl.style.height = app.height + 'px';
-            windowEl.style.zIndex = ++zIndexCounter;
+            // Add Win95-style delay before window appears
+            setTimeout(() => {
+                const windowId = `window-${Date.now()}`;
+                const windowEl = document.createElement('div');
+                windowEl.className = 'window';
+                windowEl.id = windowId;
+                windowEl.dataset.app = appId;
 
-            const menuItems = app.menuBar || ['File', 'Edit', 'View', 'Help'];
-            const menuBarHTML = `<div class="menu-bar">${menuItems.map(m => `<span class="menu-item">${m}</span>`).join('')}</div>`;
-            const contentClass = app.createContent ? 'window-content no-bg no-margin' : 'window-content';
-            const contentHTML = app.createContent ? `<div class="${contentClass}"></div>` : `<div class="${contentClass}">${app.content}</div>`;
+                const offset = windows.length * 30;
+                windowEl.style.left = (100 + offset) + 'px';
+                windowEl.style.top = (50 + offset) + 'px';
+                windowEl.style.width = app.width + 'px';
+                windowEl.style.height = app.height + 'px';
+                windowEl.style.zIndex = ++zIndexCounter;
+                windowEl.style.opacity = '0';
+                windowEl.style.transition = 'opacity 0.15s ease-in';
 
-            windowEl.innerHTML = `
-                <div class="title-bar">
-                    <span class="title-bar-text"><span class="title-bar-icon">${app.icon}</span>${app.title}</span>
-                    <div class="title-bar-controls">
-                        <button class="minimize-btn">_</button>
-                        <button class="maximize-btn">□</button>
-                        <button class="close-btn">×</button>
+                const menuItems = app.menuBar || ['File', 'Edit', 'View', 'Help'];
+                const menuBarHTML = `<div class="menu-bar">${menuItems.map(m => `<span class="menu-item">${m}</span>`).join('')}</div>`;
+                const contentClass = app.createContent ? 'window-content no-bg no-margin' : 'window-content';
+                const contentHTML = app.createContent ? `<div class="${contentClass}"></div>` : `<div class="${contentClass}">${app.content}</div>`;
+
+                windowEl.innerHTML = `
+                    <div class="title-bar">
+                        <span class="title-bar-text"><span class="title-bar-icon">${app.icon}</span>${app.title}</span>
+                        <div class="title-bar-controls">
+                            <button class="minimize-btn">_</button>
+                            <button class="maximize-btn">□</button>
+                            <button class="close-btn">×</button>
+                        </div>
                     </div>
-                </div>
-                ${menuBarHTML}
-                ${contentHTML}
-                <div class="status-bar"><div class="status-section">Ready</div></div>
-                <div class="resize-handle"></div>`;
+                    ${menuBarHTML}
+                    ${contentHTML}
+                    <div class="status-bar"><div class="status-section">Ready</div></div>
+                    <div class="resize-handle"></div>`;
 
-            document.getElementById('windowsContainer').appendChild(windowEl);
-            if (app.createContent) app.createContent(windowEl.querySelector('.window-content'), windowId);
+                document.getElementById('windowsContainer').appendChild(windowEl);
 
-            const windowData = { id: windowId, appId, element: windowEl, minimized: false };
-            windows.push(windowData);
-            addTaskbarButton(windowData);
-            setActiveWindow(windowData);
-            setupWindowEvents(windowEl, windowData);
+                // Fade in the window
+                setTimeout(() => windowEl.style.opacity = '1', 10);
+
+                if (app.createContent) app.createContent(windowEl.querySelector('.window-content'), windowId);
+
+                const windowData = { id: windowId, appId, element: windowEl, minimized: false };
+                windows.push(windowData);
+                addTaskbarButton(windowData);
+                setActiveWindow(windowData);
+                setupWindowEvents(windowEl, windowData);
+            }, 200); // Win95-style delay
         }
 
         function setupWindowEvents(windowEl, windowData) {
