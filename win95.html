@@ -442,9 +442,15 @@
             // Show hourglass cursor
             document.body.classList.add('hourglass');
 
-            // Variable delay based on app complexity - slower for authentic Win95 feel
-            const heavyApps = ['paint', 'solitaire', 'minesweeper', 'games'];
-            const delay = heavyApps.includes(appId) ? (500 + Math.random() * 300) : (250 + Math.random() * 150);
+            // Variable delay based on app complexity - REALLY slow for authentic Win95 feel
+            let delay;
+            if (app.isCdRom) {
+                // CD-ROM games were PAINFULLY slow in Win95
+                delay = 2000 + Math.random() * 2000; // 2-4 seconds
+            } else {
+                const heavyApps = ['paint', 'solitaire', 'minesweeper', 'games'];
+                delay = heavyApps.includes(appId) ? (800 + Math.random() * 700) : (400 + Math.random() * 400); // 0.8-1.5s for heavy, 0.4-0.8s for light
+            }
 
             // Add Win95-style delay before window appears
             setTimeout(() => {
@@ -1294,9 +1300,9 @@
                 resetScreensaverTimer();
                 if (document.getElementById('screensaver').classList.contains('active')) stopScreensaver();
                 if (dragState) {
-                    // Throttle drag updates for authentic Win95 choppy feel (30-35 FPS instead of 60)
+                    // Throttle drag updates for authentic Win95 VERY choppy feel (~15 FPS)
                     const now = Date.now();
-                    const throttleDelay = 30; // ms between updates
+                    const throttleDelay = 60; // ms between updates (was 30, now even slower)
 
                     if (dragState.type === 'move') {
                         // Move outline instead of window (Win95 lag effect)
