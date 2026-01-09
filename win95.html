@@ -64,6 +64,28 @@
         }
         .shutdown-overlay.active { opacity: 1; pointer-events: all; }
 
+        /* Blue Screen of Death */
+        .bsod {
+            position: fixed;
+            inset: 0;
+            background: #0000aa;
+            color: #ffffff;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            padding: 40px;
+            z-index: 100001;
+            display: none;
+            line-height: 1.5;
+        }
+        .bsod.active { display: block; }
+        .bsod-title {
+            background: #aaaaaa;
+            color: #0000aa;
+            padding: 2px 4px;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+
         /* Start menu animation - slower for Win95 feel */
         .start-menu {
             animation: none;
@@ -263,6 +285,18 @@
 
     <div class="shutdown-overlay" id="shutdownOverlay"></div>
 
+    <div class="bsod" id="bsod">
+        <div class="bsod-title"> Windows </div>
+        <div>A fatal exception 0E has occurred at 0028:C0011E36 in VXD VMM(01) +</div>
+        <div>00010E36. The current application will be terminated.</div>
+        <br>
+        <div>* Press any key to terminate the current application.</div>
+        <div>* Press CTRL+ALT+DEL again to restart your computer. You will</div>
+        <div>  lose any unsaved information in all applications.</div>
+        <br>
+        <div>Press any key to continue _</div>
+    </div>
+
     <script>
         // Config
         const desktopIconsConfig = [
@@ -292,6 +326,8 @@
                 { icon: '🎛️', label: 'Control Panel' },
                 { icon: '🖨️', label: 'Printers' },
                 { icon: '📊', label: 'Taskbar' },
+                { type: 'divider' },
+                { id: 'display', icon: '🖥️', label: 'Display...' },
             ]},
             { type: 'item', id: 'find', icon: '🔍', label: 'Find', arrow: true, submenu: [
                 { icon: '📄', label: 'Files or Folders...' },
@@ -319,6 +355,7 @@
             civilization2: { title: 'Civilization II', icon: '🏛️', isCdRom: true, cdName: 'Civilization II' },
             themehospital: { title: 'Theme Hospital', icon: '🏥', isCdRom: true, cdName: 'Theme Hospital' },
             aoe: { title: 'Age of Empires', icon: '⚔️', isCdRom: true, cdName: 'Age of Empires' },
+            display: { title: 'Display Properties', icon: '🖥️', width: 450, height: 500, menuBar: [], createContent: createDisplayProperties },
         };
 
         let windows = [], activeWindow = null, zIndexCounter = 100, dragState = null, iconDragState = null, lastDragUpdate = 0;
@@ -593,6 +630,79 @@
                 else setActiveWindow(windowData);
             });
             document.getElementById('taskbarPrograms').appendChild(btn);
+        }
+
+        // =====================
+        // DISPLAY PROPERTIES
+        // =====================
+
+        function createDisplayProperties(container, windowId) {
+            const wallpapers = [
+                { id: 'teal', name: '(None)', color: '#008080' },
+                { id: 'clouds', name: 'Clouds', color: '#0080c0', pattern: 'url("data:image/svg+xml,%3Csvg width=\'100\' height=\'100\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cellipse cx=\'30\' cy=\'40\' rx=\'20\' ry=\'10\' fill=\'white\' opacity=\'0.4\'/%3E%3Cellipse cx=\'70\' cy=\'60\' rx=\'25\' ry=\'12\' fill=\'white\' opacity=\'0.3\'/%3E%3C/svg%3E")' },
+                { id: 'squares', name: 'Squares', color: '#008080', pattern: 'repeating-linear-gradient(45deg, #007070 0px, #007070 10px, transparent 10px, transparent 20px)' },
+                { id: 'bricks', name: 'Bricks', color: '#a04030', pattern: 'repeating-linear-gradient(0deg, #8b3626 0px, #8b3626 10px, transparent 10px, transparent 12px), repeating-linear-gradient(90deg, #8b3626 0px, #8b3626 50px, transparent 50px, transparent 52px)' },
+                { id: 'circles', name: 'Circles', color: '#004080', pattern: 'radial-gradient(circle, #003366 20%, transparent 20%), radial-gradient(circle, #003366 20%, transparent 20%)', size: '30px 30px', position: '0 0, 15px 15px' },
+            ];
+
+            container.style.background = 'var(--win-bg)';
+            container.style.padding = '15px';
+
+            const currentBg = document.querySelector('.desktop').style.backgroundImage || '';
+            const currentColor = document.querySelector('.desktop').style.backgroundColor || '#008080';
+
+            container.innerHTML = `
+                <div style="display:flex;flex-direction:column;gap:15px;height:100%;">
+                    <div style="border:2px inset var(--win-darker);padding:10px;background:#000;height:150px;display:flex;align-items:center;justify-content:center;">
+                        <div id="wallpaper-preview-${windowId}" style="width:200px;height:120px;border:1px solid #fff;position:relative;background:${currentColor};">
+                            <div style="position:absolute;bottom:20px;left:20px;width:80px;height:60px;background:var(--win-bg);border:2px outset var(--win-light);box-shadow:2px 2px 4px rgba(0,0,0,0.5);">
+                                <div style="background:var(--title-active);height:18px;border-bottom:2px outset var(--win-light);"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label style="font-weight:bold;display:block;margin-bottom:5px;">Wallpaper:</label>
+                        <select id="wallpaper-select-${windowId}" style="width:100%;padding:4px;border:2px inset var(--win-darker);">
+                            ${wallpapers.map(w => `<option value="${w.id}">${w.name}</option>`).join('')}
+                        </select>
+                    </div>
+
+                    <div style="margin-top:auto;display:flex;justify-content:flex-end;gap:8px;padding-top:10px;border-top:2px groove var(--win-darker);">
+                        <button onclick="document.getElementById('wallpaper-select-${windowId}').dispatchEvent(new Event('change'))" style="padding:4px 20px;min-width:75px;">Apply</button>
+                        <button onclick="this.closest('.window').querySelector('.close-btn').click()" style="padding:4px 20px;min-width:75px;">OK</button>
+                    </div>
+                </div>
+            `;
+
+            const select = document.getElementById(`wallpaper-select-${windowId}`);
+            const preview = document.getElementById(`wallpaper-preview-${windowId}`);
+
+            select.addEventListener('change', () => {
+                const selected = wallpapers.find(w => w.id === select.value);
+                if (selected) {
+                    const desktop = document.querySelector('.desktop');
+                    desktop.style.backgroundColor = selected.color;
+
+                    if (selected.pattern) {
+                        desktop.style.backgroundImage = selected.pattern;
+                        desktop.style.backgroundSize = selected.size || '4px 4px';
+                        desktop.style.backgroundPosition = selected.position || '0 0';
+                    } else {
+                        desktop.style.backgroundImage = 'linear-gradient(45deg, #007070 25%, transparent 25%), linear-gradient(-45deg, #007070 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #007070 75%), linear-gradient(-45deg, transparent 75%, #007070 75%)';
+                        desktop.style.backgroundSize = '4px 4px';
+                    }
+
+                    // Update preview
+                    preview.style.background = selected.color;
+                    if (selected.pattern) {
+                        preview.style.backgroundImage = selected.pattern;
+                        preview.style.backgroundSize = selected.size || '20% 20%';
+                    } else {
+                        preview.style.backgroundImage = 'none';
+                    }
+                }
+            });
         }
 
         // =====================
@@ -1357,9 +1467,31 @@
                 }
             });
 
-            document.addEventListener('keydown', () => {
+            // Track keys pressed for BSOD easter egg
+            const pressedKeys = new Set();
+
+            document.addEventListener('keydown', (e) => {
                 resetScreensaverTimer();
                 if (document.getElementById('screensaver').classList.contains('active')) stopScreensaver();
+
+                // Track key presses for BSOD
+                pressedKeys.add(e.code);
+
+                // Trigger BSOD if 3+ keys pressed simultaneously
+                if (pressedKeys.size >= 3) {
+                    const bsod = document.getElementById('bsod');
+                    bsod.classList.add('active');
+
+                    // Reload page on any key press after BSOD
+                    const reloadHandler = () => {
+                        location.reload();
+                    };
+                    document.addEventListener('keydown', reloadHandler, { once: true });
+                }
+            });
+
+            document.addEventListener('keyup', (e) => {
+                pressedKeys.delete(e.code);
             });
         }
 
