@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SCHILDT.COM</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --win-bg: #c0c0c0;
+            --win-dark: #808080;
+            --win-darker: #000000;
+            --win-light: #ffffff;
+            --win-lighter: #dfdfdf;
+            --title-active: linear-gradient(90deg, #000080, #1084d0);
+            --title-inactive: linear-gradient(90deg, #808080, #b0b0b0);
+        }
+
+        html, body { height: 100%; overflow: hidden; font-family: Arial, sans-serif; font-size: 11px; }
+
+        .desktop {
+            width: 100%; height: 100%;
+            background-color: #008080;
+            background-image: linear-gradient(45deg, #007070 25%, transparent 25%), linear-gradient(-45deg, #007070 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #007070 75%), linear-gradient(-45deg, transparent 75%, #007070 75%);
+            background-size: 4px 4px;
+            position: relative; user-select: none;
+        }
+
+        .desktop-icons { position: absolute; inset: 10px; bottom: 38px; }
+
+        .icon { position: absolute; display: flex; flex-direction: column; align-items: center; width: 70px; padding: 4px; cursor: pointer; }
+        .icon:hover .icon-label, .icon.selected .icon-label { background: #000080; color: white; text-shadow: none; }
+        .icon.dragging { opacity: 0.7; z-index: 1000; }
+        .icon-image { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 28px; margin-bottom: 4px; }
+        .icon-label { color: white; text-align: center; font-size: 11px; text-shadow: 1px 1px 0 #000; word-wrap: break-word; max-width: 70px; padding: 1px 2px; }
+
+        .taskbar { position: absolute; bottom: 0; left: 0; right: 0; height: 28px; background: var(--win-bg); border-top: 2px solid var(--win-light); display: flex; align-items: center; padding: 2px 4px; gap: 4px; z-index: 9998; }
+
+        .start-button { display: flex; align-items: center; gap: 4px; padding: 2px 6px; height: 22px; background: var(--win-bg); border: none; box-shadow: inset -1px -1px 0 0 var(--win-darker), inset 1px 1px 0 0 var(--win-light), inset -2px -2px 0 0 var(--win-dark), inset 2px 2px 0 0 var(--win-lighter); cursor: pointer; font-family: inherit; font-size: 11px; font-weight: bold; }
+        .start-button:active, .start-button.active { box-shadow: inset 1px 1px 0 0 var(--win-darker), inset -1px -1px 0 0 var(--win-light), inset 2px 2px 0 0 var(--win-dark), inset -2px -2px 0 0 var(--win-lighter); padding: 3px 5px 1px 7px; }
+        .start-logo { font-size: 14px; }
+
+        .taskbar-divider { width: 2px; height: 22px; background: var(--win-dark); border-right: 1px solid var(--win-light); margin: 0 2px; }
+        .taskbar-programs { flex: 1; display: flex; gap: 4px; overflow: hidden; }
+        .taskbar-program { display: flex; align-items: center; gap: 4px; padding: 2px 8px; height: 22px; min-width: 120px; max-width: 180px; background: var(--win-bg); border: none; box-shadow: inset -1px -1px 0 0 var(--win-darker), inset 1px 1px 0 0 var(--win-light), inset -2px -2px 0 0 var(--win-dark), inset 2px 2px 0 0 var(--win-lighter); cursor: pointer; font-family: inherit; font-size: 11px; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .taskbar-program.active { box-shadow: inset 1px 1px 0 0 var(--win-darker), inset -1px -1px 0 0 var(--win-light), inset 2px 2px 0 0 var(--win-dark), inset -2px -2px 0 0 var(--win-lighter); background: repeating-linear-gradient(90deg, var(--win-bg), var(--win-bg) 2px, var(--win-light) 2px, var(--win-light) 4px); }
+        .taskbar-program-icon { font-size: 12px; flex-shrink: 0; }
+
+        .system-tray { display: flex; align-items: center; gap: 8px; padding: 2px 8px; height: 22px; box-shadow: inset -1px -1px 0 0 var(--win-light), inset 1px 1px 0 0 var(--win-dark); }
+        .tray-icon { font-size: 12px; }
+        .tray-clock { font-size: 11px; min-width: 50px; text-align: center; }
+
+        .windows-container { position: absolute; inset: 0; bottom: 28px; pointer-events: none; z-index: 100; }
+        .windows-container > * { pointer-events: auto; }
+
+        .window { position: absolute; display: flex; flex-direction: column; background: var(--win-bg); box-shadow: inset -1px -1px 0 0 var(--win-darker), inset 1px 1px 0 0 var(--win-light), inset -2px -2px 0 0 var(--win-dark), inset 2px 2px 0 0 var(--win-lighter); min-width: 200px; min-height: 100px; }
+        .window.maximized { top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; }
+
+        .title-bar { display: flex; align-items: center; justify-content: space-between; padding: 2px 3px; background: var(--title-active); cursor: default; }
+        .window.inactive .title-bar { background: var(--title-inactive); }
+        .title-bar-text { color: white; font-weight: bold; font-size: 11px; padding-left: 2px; display: flex; align-items: center; gap: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .title-bar-icon { font-size: 12px; }
+        .title-bar-controls { display: flex; gap: 2px; }
+        .title-bar-controls button { width: 16px; height: 14px; background: var(--win-bg); border: none; box-shadow: inset -1px -1px 0 0 var(--win-darker), inset 1px 1px 0 0 var(--win-light), inset -2px -2px 0 0 var(--win-dark), inset 2px 2px 0 0 var(--win-lighter); font-size: 9px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .title-bar-controls button:active { box-shadow: inset 1px 1px 0 0 var(--win-darker), inset -1px -1px 0 0 var(--win-light); }
+
+        .menu-bar { display: flex; padding: 2px 0; background: var(--win-bg); border-bottom: 1px solid var(--win-dark); }
+        .menu-item { padding: 2px 8px; cursor: pointer; }
+        .menu-item:hover { background: #000080; color: white; }
+
+        .window-content { flex: 1; overflow: auto; background: white; margin: 3px; box-shadow: inset -1px -1px 0 0 var(--win-light), inset 1px 1px 0 0 var(--win-dark); }
+        .window-content.no-bg { background: var(--win-bg); box-shadow: none; }
+        .window-content.no-margin { margin: 0; }
+
+        .status-bar { display: flex; padding: 2px 4px; gap: 2px; background: var(--win-bg); }
+        .status-section { padding: 1px 6px; box-shadow: inset -1px -1px 0 0 var(--win-light), inset 1px 1px 0 0 var(--win-dark); flex: 1; }
+
+        .resize-handle { position: absolute; bottom: 0; right: 0; width: 16px; height: 16px; cursor: nwse-resize; background: linear-gradient(135deg, transparent 0%, transparent 30%, var(--win-dark) 30%, var(--win-dark) 35%, transparent 35%, transparent 45%, var(--win-dark) 45%, var(--win-dark) 50%, transparent 50%, transparent 60%, var(--win-dark) 60%, var(--win-dark) 65%, transparent 65%, transparent 100%); }
+
+        /* Start Menu */
+        .start-menu { position: absolute; bottom: 28px; left: 0; background: var(--win-bg); box-shadow: inset -1px -1px 0 0 var(--win-darker), inset 1px 1px 0 0 var(--win-light), inset -2px -2px 0 0 var(--win-dark), inset 2px 2px 0 0 var(--win-lighter), 4px 4px 8px rgba(0,0,0,0.3); display: none; z-index: 9999; }
+        .start-menu.open { display: flex; }
+        .start-menu-sidebar { width: 24px; background: linear-gradient(to top, #000080, #1084d0); display: flex; align-items: flex-end; padding-bottom: 8px; }
+        .start-menu-sidebar-text { color: #c0c0c0; font-weight: bold; font-size: 20px; writing-mode: vertical-rl; transform: rotate(180deg); letter-spacing: 2px; }
+        .start-menu-content { padding: 3px 0; }
+        .start-menu-item { display: flex; align-items: center; gap: 8px; padding: 4px 24px 4px 8px; cursor: pointer; position: relative; white-space: nowrap; }
+        .start-menu-item:hover { background: #000080; color: white; }
+        .start-menu-item-icon { font-size: 20px; width: 28px; text-align: center; }
+        .start-menu-item-text { font-size: 11px; }
+        .start-menu-item-arrow { position: absolute; right: 8px; font-size: 8px; }
+        .start-menu-divider { height: 1px; background: var(--win-dark); margin: 4px 4px 4px 40px; border-bottom: 1px solid var(--win-light); }
+        .start-submenu { position: absolute; left: 100%; top: -3px; background: var(--win-bg); box-shadow: inset -1px -1px 0 0 var(--win-darker), inset 1px 1px 0 0 var(--win-light), inset -2px -2px 0 0 var(--win-dark), inset 2px 2px 0 0 var(--win-lighter), 4px 4px 8px rgba(0,0,0,0.3); display: none; padding: 3px 0; z-index: 10000; }
+        .start-menu-item:hover .start-submenu { display: block; }
+
+        /* Minesweeper */
+        .minesweeper { display: flex; flex-direction: column; align-items: center; padding: 6px; background: var(--win-bg); height: 100%; }
+        .minesweeper-header { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 4px 6px; margin-bottom: 6px; box-shadow: inset -2px -2px 0 0 var(--win-lighter), inset 2px 2px 0 0 var(--win-dark); }
+        .minesweeper-counter { background: #000; color: #ff0000; font-family: Consolas, monospace; font-size: 20px; font-weight: bold; padding: 2px 4px; min-width: 50px; text-align: center; }
+        .minesweeper-face { width: 26px; height: 26px; font-size: 16px; background: var(--win-bg); border: none; box-shadow: inset -1px -1px 0 0 var(--win-darker), inset 1px 1px 0 0 var(--win-light), inset -2px -2px 0 0 var(--win-dark), inset 2px 2px 0 0 var(--win-lighter); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .minesweeper-grid { display: grid; gap: 0; box-shadow: inset -2px -2px 0 0 var(--win-lighter), inset 2px 2px 0 0 var(--win-dark); padding: 3px; }
+        .minesweeper-cell { width: 20px; height: 20px; background: var(--win-bg); border: none; box-shadow: inset -1px -1px 0 0 var(--win-darker), inset 1px 1px 0 0 var(--win-light), inset -2px -2px 0 0 var(--win-dark), inset 2px 2px 0 0 var(--win-lighter); cursor: pointer; font-size: 12px; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+        .minesweeper-cell:active:not(.revealed) { box-shadow: inset 1px 1px 0 0 var(--win-dark); }
+        .minesweeper-cell.revealed { box-shadow: inset 1px 1px 0 0 var(--win-dark); cursor: default; }
+        .minesweeper-cell.mine { background: #ff0000; }
+        .minesweeper-cell.flagged::after { content: '🚩'; }
+        .minesweeper-cell[data-count="1"] { color: #0000ff; }
+        .minesweeper-cell[data-count="2"] { color: #008000; }
+        .minesweeper-cell[data-count="3"] { color: #ff0000; }
+        .minesweeper-cell[data-count="4"] { color: #000080; }
+        .minesweeper-cell[data-count="5"] { color: #800000; }
+        .minesweeper-cell[data-count="6"] { color: #008080; }
+        .minesweeper-cell[data-count="7"] { color: #000000; }
+        .minesweeper-cell[data-count="8"] { color: #808080; }
+
+        /* Solitaire */
+        .solitaire { background: #008000; height: 100%; padding: 10px; display: flex; flex-direction: column; gap: 20px; }
+        .solitaire-top { display: flex; gap: 15px; }
+        .solitaire-stock { display: flex; gap: 10px; }
+        .solitaire-foundations { display: flex; gap: 10px; margin-left: auto; }
+        .solitaire-tableau { display: flex; gap: 15px; flex: 1; }
+        .solitaire-pile { position: relative; width: 70px; min-height: 96px; }
+        .solitaire-slot { width: 70px; height: 96px; border: 2px solid rgba(255,255,255,0.3); border-radius: 4px; background: rgba(0,0,0,0.1); }
+        .card { width: 70px; height: 96px; background: white; border-radius: 4px; border: 1px solid #000; position: absolute; cursor: pointer; display: flex; flex-direction: column; font-size: 14px; font-weight: bold; box-shadow: 1px 1px 3px rgba(0,0,0,0.3); }
+        .card.face-down { background: linear-gradient(135deg, #1e3a8a 25%, #1e40af 25%, #1e40af 50%, #1e3a8a 50%, #1e3a8a 75%, #1e40af 75%); background-size: 8px 8px; cursor: default; }
+        .card.red { color: #dc2626; }
+        .card.black { color: #000; }
+        .card.dragging { z-index: 1000; box-shadow: 4px 4px 10px rgba(0,0,0,0.4); }
+        .card-corner { padding: 3px 5px; line-height: 1; }
+        .card-corner-br { margin-top: auto; align-self: flex-end; transform: rotate(180deg); }
+        .card-center { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 28px; }
+
+        /* Paint */
+        .paint-container { display: flex; height: 100%; background: var(--win-bg); }
+        .paint-toolbox { width: 50px; padding: 4px; display: flex; flex-direction: column; gap: 2px; border-right: 1px solid var(--win-dark); }
+        .paint-tool { width: 40px; height: 32px; background: var(--win-bg); border: none; box-shadow: inset -1px -1px 0 0 var(--win-darker), inset 1px 1px 0 0 var(--win-light); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+        .paint-tool:hover { background: var(--win-lighter); }
+        .paint-tool.active { box-shadow: inset 1px 1px 0 0 var(--win-darker), inset -1px -1px 0 0 var(--win-light); background: var(--win-light); }
+        .paint-main { flex: 1; display: flex; flex-direction: column; }
+        .paint-canvas-area { flex: 1; overflow: auto; padding: 4px; background: #808080; }
+        .paint-canvas { background: white; cursor: crosshair; image-rendering: pixelated; }
+        .paint-color-area { display: flex; align-items: center; gap: 8px; padding: 4px; border-top: 1px solid var(--win-dark); }
+        .paint-current-colors { display: flex; gap: 2px; }
+        .paint-current-color { width: 24px; height: 24px; border: 2px solid var(--win-bg); box-shadow: inset -1px -1px 0 0 var(--win-light), inset 1px 1px 0 0 var(--win-dark); }
+        .paint-fg-color { position: relative; z-index: 2; }
+        .paint-bg-color { margin-left: -8px; margin-top: 8px; }
+        .paint-palette { display: flex; flex-wrap: wrap; gap: 1px; margin-left: 8px; }
+        .paint-color { width: 16px; height: 16px; cursor: pointer; border: 1px solid #000; }
+        .paint-color:hover { border-color: white; }
+        .paint-size-area { display: flex; align-items: center; gap: 4px; margin-left: 16px; padding-left: 16px; border-left: 1px solid var(--win-dark); }
+        .paint-size-btn { width: 24px; height: 24px; background: var(--win-bg); border: 1px solid var(--win-dark); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .paint-size-btn.active { background: white; border: 2px solid #000080; }
+        .paint-size-preview { width: var(--size); height: var(--size); background: black; border-radius: 50%; }
+
+        /* Screensaver */
+        .screensaver { position: fixed; inset: 0; background: #000; z-index: 99999; display: none; cursor: none; }
+        .screensaver.active { display: block; }
+        .screensaver canvas { width: 100%; height: 100%; }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div class="desktop" id="desktop">
+        <div class="desktop-icons" id="desktopIcons"></div>
+        <div class="windows-container" id="windowsContainer"></div>
+
+        <div class="start-menu" id="startMenu">
+            <div class="start-menu-sidebar">
+                <span class="start-menu-sidebar-text">Schildt<span style="font-weight:normal">95</span></span>
+            </div>
+            <div class="start-menu-content" id="startMenuContent"></div>
+        </div>
+
+        <div class="taskbar">
+            <button class="start-button" id="startButton">
+                <span class="start-logo">🪟</span>
+                <span>Start</span>
+            </button>
+            <div class="taskbar-divider"></div>
+            <div class="taskbar-programs" id="taskbarPrograms"></div>
+            <div class="system-tray">
+                <span class="tray-icon">🔊</span>
+                <span class="tray-clock" id="clock">12:00 PM</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="screensaver" id="screensaver">
+        <canvas id="screensaverCanvas"></canvas>
+    </div>
+
+    <script>
+        // Config
+        const desktopIconsConfig = [
+            { id: 'terminal', icon: '💻', label: 'Terminal', x: 10, y: 10 },
+            { id: 'about', icon: '📄', label: 'About Me', x: 10, y: 90 },
+            { id: 'projects', icon: '📁', label: 'Projects', x: 10, y: 170 },
+            { id: 'games', icon: '🎮', label: 'Games', x: 10, y: 250 },
+            { id: 'paint', icon: '🎨', label: 'Paint', x: 10, y: 330 },
+            { id: 'minesweeper', icon: '💣', label: 'Minesweeper', x: 10, y: 410 },
+            { id: 'solitaire', icon: '🃏', label: 'Solitaire', x: 10, y: 490 },
+            { id: 'recycle', icon: '🗑️', label: 'Recycle Bin', x: 10, y: 570 },
+        ];
+
+        const startMenuConfig = [
+            { type: 'item', id: 'programs', icon: '📁', label: 'Programs', arrow: true, submenu: [
+                { id: 'terminal', icon: '💻', label: 'Terminal' },
+                { id: 'notepad', icon: '📝', label: 'Notepad' },
+                { id: 'paint', icon: '🎨', label: 'Paint' },
+                { type: 'divider' },
+                { id: 'minesweeper', icon: '💣', label: 'Minesweeper' },
+                { id: 'solitaire', icon: '🃏', label: 'Solitaire' },
+            ]},
+            { type: 'item', id: 'documents', icon: '📄', label: 'Documents', arrow: true, submenu: [
+                { id: 'about', icon: '📄', label: 'About Me.txt' },
+            ]},
+            { type: 'item', id: 'settings', icon: '⚙️', label: 'Settings', arrow: true, submenu: [
+                { id: 'screensaver', icon: '🖥️', label: 'Screen Saver' },
+            ]},
+            { type: 'divider' },
+            { type: 'item', id: 'shutdown', icon: '⭕', label: 'Shut Down...', action: 'shutdown' },
+        ];
+
+        const apps = {
+            terminal: { title: 'Terminal', icon: '💻', width: 600, height: 400, content: '<div style="background:#0a0a0a;color:#33ff33;font-family:Consolas,monospace;padding:10px;height:100%;font-size:14px;">C:\\> _</div>' },
+            about: { title: 'About Me - Notepad', icon: '📄', width: 500, height: 350, content: '<div style="padding:10px;font-family:Courier New,monospace;font-size:12px;white-space:pre-wrap;">JOHANNES SCHILDT\n════════════════════════════════\n\nSwedish. Founder. Building things.\n\nCurrently:\n  ► CEO & Founder @ Admin.ai\n  ► Founder & Chairman @ Kry\n\nLocation: Variable\n\n────────────────────────────────\n"Replacing clinicians with compute"</div>' },
+            notepad: { title: 'Untitled - Notepad', icon: '📝', width: 500, height: 350, content: '<textarea style="width:100%;height:100%;border:none;resize:none;padding:10px;font-family:Courier New,monospace;font-size:12px;outline:none;"></textarea>' },
+            projects: { title: 'Projects', icon: '📁', width: 550, height: 400, content: '<div style="padding:20px;display:grid;grid-template-columns:repeat(3,1fr);gap:20px;text-align:center;"><div style="cursor:pointer;" onclick="window.open(\'https://kry.se\')"><div style="font-size:48px;">🏥</div><div>Kry</div></div><div style="cursor:pointer;" onclick="window.open(\'https://admin.ai\')"><div style="font-size:48px;">🤖</div><div>Admin.ai</div></div></div>' },
+            games: { title: 'Games', icon: '🎮', width: 500, height: 350, isFolder: true, createContent: createGamesFolder },
+            paint: { title: 'untitled - Paint', icon: '🎨', width: 800, height: 550, menuBar: ['File', 'Edit', 'View', 'Image', 'Colors', 'Help'], createContent: createPaint },
+            minesweeper: { title: 'Minesweeper', icon: '💣', width: 280, height: 380, menuBar: ['Game', 'Help'], createContent: createMinesweeper },
+            solitaire: { title: 'Solitaire', icon: '🃏', width: 800, height: 600, menuBar: ['Game', 'Help'], createContent: createSolitaire },
+            recycle: { title: 'Recycle Bin', icon: '🗑️', width: 400, height: 300, content: '<div style="padding:40px;text-align:center;color:#808080;">🗑️<br><br>Recycle Bin is empty</div>' },
+            screensaver: { title: 'Screen Saver Settings', icon: '🖥️', width: 400, height: 200, content: '<div style="padding:20px;text-align:center;"><p style="margin-bottom:20px;">Click the button to preview the screen saver.</p><button onclick="startScreensaver()" style="padding:8px 24px;font-size:14px;cursor:pointer;">Preview</button><br><br><small>Move mouse or press any key to exit</small></div>' },
+            // CD-ROM Games
+            simtower: { title: 'SimTower', icon: '🏢', isCdRom: true, cdName: 'SimTower' },
+            myst: { title: 'Myst', icon: '📀', isCdRom: true, cdName: 'Myst' },
+            civilization2: { title: 'Civilization II', icon: '🏛️', isCdRom: true, cdName: 'Civilization II' },
+            themehospital: { title: 'Theme Hospital', icon: '🏥', isCdRom: true, cdName: 'Theme Hospital' },
+            aoe: { title: 'Age of Empires', icon: '⚔️', isCdRom: true, cdName: 'Age of Empires' },
+        };
+
+        let windows = [], activeWindow = null, zIndexCounter = 100, dragState = null, iconDragState = null;
+        let screensaverTimeout = null;
+        const SCREENSAVER_DELAY = 120000;
+
+        function init() {
+            createDesktopIcons();
+            createStartMenu();
+            setupEventListeners();
+            updateClock();
+            setInterval(updateClock, 1000);
+            resetScreensaverTimer();
+        }
+
+        function createDesktopIcons() {
+            const container = document.getElementById('desktopIcons');
+            desktopIconsConfig.forEach(config => {
+                const icon = document.createElement('div');
+                icon.className = 'icon';
+                icon.dataset.app = config.id;
+                icon.style.left = config.x + 'px';
+                icon.style.top = config.y + 'px';
+                icon.innerHTML = `<div class="icon-image">${config.icon}</div><div class="icon-label">${config.label}</div>`;
+                icon.addEventListener('dblclick', () => openWindow(config.id));
+                icon.addEventListener('mousedown', (e) => {
+                    e.stopPropagation();
+                    selectIcon(icon);
+                    iconDragState = { icon, startX: e.clientX, startY: e.clientY, iconStartX: icon.offsetLeft, iconStartY: icon.offsetTop };
+                });
+                container.appendChild(icon);
+            });
+        }
+
+        function selectIcon(icon) {
+            document.querySelectorAll('.icon').forEach(i => i.classList.remove('selected'));
+            if (icon) icon.classList.add('selected');
+        }
+
+        function createStartMenu() {
+            const container = document.getElementById('startMenuContent');
+            container.innerHTML = renderMenuItems(startMenuConfig);
+        }
+
+        function renderMenuItems(items) {
+            return items.map(item => {
+                if (item.type === 'divider') return '<div class="start-menu-divider"></div>';
+                let submenuHTML = '';
+                if (item.submenu) submenuHTML = `<div class="start-submenu">${renderMenuItems(item.submenu)}</div>`;
+                return `<div class="start-menu-item" data-app="${item.id || ''}" data-action="${item.action || ''}">
+                    <span class="start-menu-item-icon">${item.icon}</span>
+                    <span class="start-menu-item-text">${item.label}</span>
+                    ${item.arrow ? '<span class="start-menu-item-arrow">►</span>' : ''}${submenuHTML}</div>`;
+            }).join('');
+        }
+
+        function setupStartMenuEvents() {
+            document.querySelectorAll('.start-menu-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    if (item.querySelector('.start-submenu') && e.target.closest('.start-submenu')) return;
+                    if (item.querySelector('.start-submenu')) return;
+                    const app = item.dataset.app;
+                    const action = item.dataset.action;
+                    if (app && apps[app]) openWindow(app);
+                    else if (action === 'shutdown') shutdown();
+                    closeStartMenu();
+                });
+            });
+        }
+
+        function toggleStartMenu() {
+            document.getElementById('startMenu').classList.toggle('open');
+            document.getElementById('startButton').classList.toggle('active');
+            setupStartMenuEvents();
+        }
+
+        function closeStartMenu() {
+            document.getElementById('startMenu').classList.remove('open');
+            document.getElementById('startButton').classList.remove('active');
+        }
+
+        function shutdown() {
+            document.body.innerHTML = '<div style="background:#000;color:#fff;height:100vh;display:flex;align-items:center;justify-content:center;font-family:Arial;font-size:24px;text-align:center;">It is now safe to turn off<br>your computer.</div>';
+        }
+
+        function updateClock() {
+            document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        }
+
+        function openWindow(appId) {
+            const app = apps[appId];
+            if (!app) return;
+
+            const windowId = `window-${Date.now()}`;
+            const windowEl = document.createElement('div');
+            windowEl.className = 'window';
+            windowEl.id = windowId;
+            windowEl.dataset.app = appId;
+
+            const offset = windows.length * 30;
+            windowEl.style.left = (100 + offset) + 'px';
+            windowEl.style.top = (50 + offset) + 'px';
+            windowEl.style.width = app.width + 'px';
+            windowEl.style.height = app.height + 'px';
+            windowEl.style.zIndex = ++zIndexCounter;
+
+            const menuItems = app.menuBar || ['File', 'Edit', 'View', 'Help'];
+            const menuBarHTML = `<div class="menu-bar">${menuItems.map(m => `<span class="menu-item">${m}</span>`).join('')}</div>`;
+            const contentClass = app.createContent ? 'window-content no-bg no-margin' : 'window-content';
+            const contentHTML = app.createContent ? `<div class="${contentClass}"></div>` : `<div class="${contentClass}">${app.content}</div>`;
+
+            windowEl.innerHTML = `
+                <div class="title-bar">
+                    <span class="title-bar-text"><span class="title-bar-icon">${app.icon}</span>${app.title}</span>
+                    <div class="title-bar-controls">
+                        <button class="minimize-btn">_</button>
+                        <button class="maximize-btn">□</button>
+                        <button class="close-btn">×</button>
+                    </div>
+                </div>
+                ${menuBarHTML}
+                ${contentHTML}
+                <div class="status-bar"><div class="status-section">Ready</div></div>
+                <div class="resize-handle"></div>`;
+
+            document.getElementById('windowsContainer').appendChild(windowEl);
+            if (app.createContent) app.createContent(windowEl.querySelector('.window-content'), windowId);
+
+            const windowData = { id: windowId, appId, element: windowEl, minimized: false };
+            windows.push(windowData);
+            addTaskbarButton(windowData);
+            setActiveWindow(windowData);
+            setupWindowEvents(windowEl, windowData);
+        }
+
+        function setupWindowEvents(windowEl, windowData) {
+            const titleBar = windowEl.querySelector('.title-bar');
+            const resizeHandle = windowEl.querySelector('.resize-handle');
+            windowEl.addEventListener('mousedown', () => setActiveWindow(windowData));
+            titleBar.addEventListener('mousedown', (e) => {
+                if (e.target.tagName === 'BUTTON' || windowEl.classList.contains('maximized')) return;
+                dragState = { type: 'move', window: windowEl, startX: e.clientX - windowEl.offsetLeft, startY: e.clientY - windowEl.offsetTop };
+            });
+            resizeHandle.addEventListener('mousedown', (e) => {
+                if (windowEl.classList.contains('maximized')) return;
+                dragState = { type: 'resize', window: windowEl, startX: e.clientX, startY: e.clientY, startWidth: windowEl.offsetWidth, startHeight: windowEl.offsetHeight };
+                e.stopPropagation();
+            });
+            windowEl.querySelector('.minimize-btn').addEventListener('click', () => minimizeWindow(windowData));
+            windowEl.querySelector('.maximize-btn').addEventListener('click', () => windowEl.classList.toggle('maximized'));
+            windowEl.querySelector('.close-btn').addEventListener('click', () => closeWindow(windowData));
+            titleBar.addEventListener('dblclick', (e) => { if (e.target.tagName !== 'BUTTON') windowEl.classList.toggle('maximized'); });
+        }
+
+        function setActiveWindow(windowData) {
+            windows.forEach(w => {
+                w.element.classList.add('inactive');
+                const btn = document.querySelector(`.taskbar-program[data-window="${w.id}"]`);
+                if (btn) btn.classList.remove('active');
+            });
+            if (windowData) {
+                windowData.element.classList.remove('inactive');
+                windowData.element.style.zIndex = ++zIndexCounter;
+                activeWindow = windowData;
+                const btn = document.querySelector(`.taskbar-program[data-window="${windowData.id}"]`);
+                if (btn) btn.classList.add('active');
+            }
+        }
+
+        function minimizeWindow(windowData) {
+            windowData.element.classList.add('hidden');
+            windowData.minimized = true;
+            const visible = windows.filter(w => !w.minimized);
+            setActiveWindow(visible.length ? visible[visible.length - 1] : null);
+        }
+
+        function restoreWindow(windowData) {
+            windowData.element.classList.remove('hidden');
+            windowData.minimized = false;
+            setActiveWindow(windowData);
+        }
+
+        function closeWindow(windowData) {
+            windowData.element.remove();
+            windows = windows.filter(w => w.id !== windowData.id);
+            const btn = document.querySelector(`.taskbar-program[data-window="${windowData.id}"]`);
+            if (btn) btn.remove();
+            if (activeWindow === windowData) {
+                const visible = windows.filter(w => !w.minimized);
+                setActiveWindow(visible.length ? visible[visible.length - 1] : null);
+            }
+        }
+
+        function addTaskbarButton(windowData) {
+            const app = apps[windowData.appId];
+            const btn = document.createElement('button');
+            btn.className = 'taskbar-program active';
+            btn.dataset.window = windowData.id;
+            btn.innerHTML = `<span class="taskbar-program-icon">${app.icon}</span>${app.title}`;
+            btn.addEventListener('click', () => {
+                if (windowData.minimized) restoreWindow(windowData);
+                else if (activeWindow === windowData) minimizeWindow(windowData);
+                else setActiveWindow(windowData);
+            });
+            document.getElementById('taskbarPrograms').appendChild(btn);
+        }
+
+        // =====================
+        // GAMES FOLDER
+        // =====================
+
+        function createGamesFolder(container, windowId) {
+            const games = [
+                { id: 'simtower', icon: '🏢', label: 'SimTower.lnk' },
+                { id: 'myst', icon: '🌀', label: 'Myst.lnk' },
+                { id: 'civilization2', icon: '🏛️', label: 'Civilization II.lnk' },
+                { id: 'themehospital', icon: '🏥', label: 'Theme Hospital.lnk' },
+                { id: 'aoe', icon: '⚔️', label: 'Age of Empires.lnk' },
+            ];
+
+            container.style.background = 'white';
+            container.style.padding = '10px';
+            container.innerHTML = `
+                <div style="display:flex;flex-wrap:wrap;gap:20px;">
+                    ${games.map(g => `
+                        <div class="folder-icon" data-game="${g.id}" style="width:70px;text-align:center;cursor:pointer;padding:4px;">
+                            <div style="font-size:32px;position:relative;">
+                                ${g.icon}
+                                <div style="position:absolute;bottom:-2px;right:5px;font-size:12px;">↗️</div>
+                            </div>
+                            <div style="font-size:11px;margin-top:4px;">${g.label}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            container.querySelectorAll('.folder-icon').forEach(icon => {
+                icon.addEventListener('dblclick', () => {
+                    const gameId = icon.dataset.game;
+                    showCdRomError(apps[gameId].cdName);
+                });
+                icon.addEventListener('click', () => {
+                    container.querySelectorAll('.folder-icon').forEach(i => i.style.background = '');
+                    icon.style.background = '#000080';
+                    icon.style.color = 'white';
+                });
+            });
+        }
+
+        function showCdRomError(gameName) {
+            const errorId = `error-${Date.now()}`;
+            const errorEl = document.createElement('div');
+            errorEl.className = 'window';
+            errorEl.id = errorId;
+            errorEl.style.cssText = 'left:50%;top:50%;transform:translate(-50%,-50%);width:380px;height:auto;z-index:99999;';
+
+            errorEl.innerHTML = `
+                <div class="title-bar">
+                    <span class="title-bar-text"><span class="title-bar-icon">❌</span>${gameName}</span>
+                    <div class="title-bar-controls">
+                        <button class="close-btn" onclick="this.closest('.window').remove()">×</button>
+                    </div>
+                </div>
+                <div style="padding:20px;background:var(--win-bg);display:flex;gap:15px;align-items:flex-start;">
+                    <div style="font-size:32px;">💿</div>
+                    <div style="flex:1;">
+                        <p style="margin-bottom:15px;font-size:12px;line-height:1.4;">
+                            <b>D:\\ is not accessible.</b><br><br>
+                            Please insert the <b>${gameName}</b> CD-ROM into your CD-ROM drive (D:) and click Retry.
+                        </p>
+                        <div style="display:flex;gap:8px;justify-content:center;">
+                            <button onclick="this.closest('.window').remove()" style="padding:4px 20px;min-width:75px;cursor:pointer;">Retry</button>
+                            <button onclick="this.closest('.window').remove()" style="padding:4px 20px;min-width:75px;cursor:pointer;">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('windowsContainer').appendChild(errorEl);
+        }
+
+        // =====================
+        // PAINT
+        // =====================
+
+        function createPaint(container, windowId) {
+            const tools = [
+                { id: 'pencil', icon: '✏️', title: 'Pencil' },
+                { id: 'brush', icon: '🖌️', title: 'Brush' },
+                { id: 'eraser', icon: '🧽', title: 'Eraser' },
+                { id: 'fill', icon: '🪣', title: 'Fill' },
+                { id: 'line', icon: '📏', title: 'Line' },
+                { id: 'rect', icon: '⬜', title: 'Rectangle' },
+                { id: 'ellipse', icon: '⭕', title: 'Ellipse' },
+                { id: 'picker', icon: '💉', title: 'Color Picker' },
+                { id: 'text', icon: '🔤', title: 'Text' },
+                { id: 'spray', icon: '💨', title: 'Airbrush' },
+            ];
+
+            const palette = [
+                '#000000', '#808080', '#800000', '#808000', '#008000', '#008080', '#000080', '#800080',
+                '#ffffff', '#c0c0c0', '#ff0000', '#ffff00', '#00ff00', '#00ffff', '#0000ff', '#ff00ff',
+                '#c0c0c0', '#808080', '#ff8080', '#ffff80', '#80ff80', '#80ffff', '#8080ff', '#ff80ff',
+                '#404040', '#004040', '#800040', '#804000', '#408000', '#004080', '#400080', '#804080',
+            ];
+
+            const sizes = [1, 3, 5, 8];
+
+            let currentTool = 'pencil';
+            let fgColor = '#000000';
+            let bgColor = '#ffffff';
+            let brushSize = 3;
+            let isDrawing = false;
+            let lastX = 0, lastY = 0;
+            let startX = 0, startY = 0;
+            let canvas, ctx, tempCanvas, tempCtx;
+
+            container.innerHTML = `
+                <div class="paint-container">
+                    <div class="paint-toolbox" id="paint-tools-${windowId}">
+                        ${tools.map(t => `<button class="paint-tool ${t.id === currentTool ? 'active' : ''}" data-tool="${t.id}" title="${t.title}">${t.icon}</button>`).join('')}
+                    </div>
+                    <div class="paint-main">
+                        <div class="paint-canvas-area">
+                            <canvas id="paint-canvas-${windowId}" class="paint-canvas" width="640" height="400"></canvas>
+                            <canvas id="paint-temp-${windowId}" style="position:absolute;top:4px;left:54px;pointer-events:none;" width="640" height="400"></canvas>
+                        </div>
+                        <div class="paint-color-area">
+                            <div class="paint-current-colors">
+                                <div class="paint-current-color paint-fg-color" id="paint-fg-${windowId}" style="background:${fgColor}"></div>
+                                <div class="paint-current-color paint-bg-color" id="paint-bg-${windowId}" style="background:${bgColor}"></div>
+                            </div>
+                            <div class="paint-palette" id="paint-palette-${windowId}">
+                                ${palette.map(c => `<div class="paint-color" style="background:${c}" data-color="${c}"></div>`).join('')}
+                            </div>
+                            <div class="paint-size-area">
+                                ${sizes.map(s => `<div class="paint-size-btn ${s === brushSize ? 'active' : ''}" data-size="${s}"><div class="paint-size-preview" style="--size:${Math.min(s, 12)}px"></div></div>`).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            canvas = document.getElementById(`paint-canvas-${windowId}`);
+            ctx = canvas.getContext('2d');
+            tempCanvas = document.getElementById(`paint-temp-${windowId}`);
+            tempCtx = tempCanvas.getContext('2d');
+
+            // Fill white
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Tool selection
+            document.getElementById(`paint-tools-${windowId}`).addEventListener('click', (e) => {
+                const btn = e.target.closest('.paint-tool');
+                if (!btn) return;
+                document.querySelectorAll(`#paint-tools-${windowId} .paint-tool`).forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentTool = btn.dataset.tool;
+            });
+
+            // Palette
+            document.getElementById(`paint-palette-${windowId}`).addEventListener('click', (e) => {
+                const colorEl = e.target.closest('.paint-color');
+                if (!colorEl) return;
+                if (e.button === 2 || e.ctrlKey) {
+                    bgColor = colorEl.dataset.color;
+                    document.getElementById(`paint-bg-${windowId}`).style.background = bgColor;
+                } else {
+                    fgColor = colorEl.dataset.color;
+                    document.getElementById(`paint-fg-${windowId}`).style.background = fgColor;
+                }
+            });
+
+            document.getElementById(`paint-palette-${windowId}`).addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                const colorEl = e.target.closest('.paint-color');
+                if (!colorEl) return;
+                bgColor = colorEl.dataset.color;
+                document.getElementById(`paint-bg-${windowId}`).style.background = bgColor;
+            });
+
+            // Size selection
+            container.querySelectorAll('.paint-size-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    container.querySelectorAll('.paint-size-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    brushSize = parseInt(btn.dataset.size);
+                });
+            });
+
+            // Drawing
+            function getPos(e) {
+                const rect = canvas.getBoundingClientRect();
+                return {
+                    x: Math.floor((e.clientX - rect.left) * (canvas.width / rect.width)),
+                    y: Math.floor((e.clientY - rect.top) * (canvas.height / rect.height))
+                };
+            }
+
+            canvas.addEventListener('mousedown', (e) => {
+                const pos = getPos(e);
+                isDrawing = true;
+                lastX = pos.x;
+                lastY = pos.y;
+                startX = pos.x;
+                startY = pos.y;
+
+                if (currentTool === 'fill') {
+                    floodFill(pos.x, pos.y, fgColor);
+                    isDrawing = false;
+                } else if (currentTool === 'picker') {
+                    const pixel = ctx.getImageData(pos.x, pos.y, 1, 1).data;
+                    fgColor = `rgb(${pixel[0]},${pixel[1]},${pixel[2]})`;
+                    document.getElementById(`paint-fg-${windowId}`).style.background = fgColor;
+                    isDrawing = false;
+                } else if (currentTool === 'pencil' || currentTool === 'brush' || currentTool === 'eraser') {
+                    ctx.beginPath();
+                    ctx.arc(pos.x, pos.y, currentTool === 'pencil' ? 1 : brushSize / 2, 0, Math.PI * 2);
+                    ctx.fillStyle = currentTool === 'eraser' ? bgColor : fgColor;
+                    ctx.fill();
+                } else if (currentTool === 'spray') {
+                    spray(pos.x, pos.y);
+                }
+            });
+
+            canvas.addEventListener('mousemove', (e) => {
+                if (!isDrawing) return;
+                const pos = getPos(e);
+
+                if (currentTool === 'pencil' || currentTool === 'brush' || currentTool === 'eraser') {
+                    ctx.beginPath();
+                    ctx.moveTo(lastX, lastY);
+                    ctx.lineTo(pos.x, pos.y);
+                    ctx.strokeStyle = currentTool === 'eraser' ? bgColor : fgColor;
+                    ctx.lineWidth = currentTool === 'pencil' ? 1 : brushSize;
+                    ctx.lineCap = 'round';
+                    ctx.stroke();
+                    lastX = pos.x;
+                    lastY = pos.y;
+                } else if (currentTool === 'spray') {
+                    spray(pos.x, pos.y);
+                } else if (currentTool === 'line' || currentTool === 'rect' || currentTool === 'ellipse') {
+                    tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+                    tempCtx.strokeStyle = fgColor;
+                    tempCtx.lineWidth = brushSize;
+
+                    if (currentTool === 'line') {
+                        tempCtx.beginPath();
+                        tempCtx.moveTo(startX, startY);
+                        tempCtx.lineTo(pos.x, pos.y);
+                        tempCtx.stroke();
+                    } else if (currentTool === 'rect') {
+                        tempCtx.strokeRect(startX, startY, pos.x - startX, pos.y - startY);
+                    } else if (currentTool === 'ellipse') {
+                        tempCtx.beginPath();
+                        const cx = (startX + pos.x) / 2;
+                        const cy = (startY + pos.y) / 2;
+                        const rx = Math.abs(pos.x - startX) / 2;
+                        const ry = Math.abs(pos.y - startY) / 2;
+                        tempCtx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+                        tempCtx.stroke();
+                    }
+                }
+            });
+
+            canvas.addEventListener('mouseup', (e) => {
+                if (!isDrawing) return;
+                const pos = getPos(e);
+
+                if (currentTool === 'line' || currentTool === 'rect' || currentTool === 'ellipse') {
+                    ctx.strokeStyle = fgColor;
+                    ctx.lineWidth = brushSize;
+
+                    if (currentTool === 'line') {
+                        ctx.beginPath();
+                        ctx.moveTo(startX, startY);
+                        ctx.lineTo(pos.x, pos.y);
+                        ctx.stroke();
+                    } else if (currentTool === 'rect') {
+                        ctx.strokeRect(startX, startY, pos.x - startX, pos.y - startY);
+                    } else if (currentTool === 'ellipse') {
+                        ctx.beginPath();
+                        const cx = (startX + pos.x) / 2;
+                        const cy = (startY + pos.y) / 2;
+                        const rx = Math.abs(pos.x - startX) / 2;
+                        const ry = Math.abs(pos.y - startY) / 2;
+                        ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+                        ctx.stroke();
+                    }
+                    tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+                }
+                isDrawing = false;
+            });
+
+            canvas.addEventListener('mouseleave', () => {
+                if (isDrawing && (currentTool === 'line' || currentTool === 'rect' || currentTool === 'ellipse')) {
+                    tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+                }
+                isDrawing = false;
+            });
+
+            function spray(x, y) {
+                for (let i = 0; i < 20; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const radius = Math.random() * brushSize * 2;
+                    const px = x + Math.cos(angle) * radius;
+                    const py = y + Math.sin(angle) * radius;
+                    ctx.fillStyle = fgColor;
+                    ctx.fillRect(px, py, 1, 1);
+                }
+            }
+
+            function floodFill(x, y, fillColor) {
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const data = imageData.data;
+                const targetColor = getPixel(x, y);
+
+                // Parse fill color
+                const temp = document.createElement('canvas').getContext('2d');
+                temp.fillStyle = fillColor;
+                temp.fillRect(0, 0, 1, 1);
+                const fillRgb = temp.getImageData(0, 0, 1, 1).data;
+
+                if (colorsMatch(targetColor, fillRgb)) return;
+
+                const stack = [[x, y]];
+                const visited = new Set();
+
+                while (stack.length) {
+                    const [cx, cy] = stack.pop();
+                    const key = `${cx},${cy}`;
+                    if (visited.has(key)) continue;
+                    if (cx < 0 || cx >= canvas.width || cy < 0 || cy >= canvas.height) continue;
+
+                    const current = getPixel(cx, cy);
+                    if (!colorsMatch(current, targetColor)) continue;
+
+                    visited.add(key);
+                    setPixel(cx, cy, fillRgb);
+
+                    stack.push([cx + 1, cy], [cx - 1, cy], [cx, cy + 1], [cx, cy - 1]);
+                }
+
+                ctx.putImageData(imageData, 0, 0);
+
+                function getPixel(px, py) {
+                    const i = (py * canvas.width + px) * 4;
+                    return [data[i], data[i + 1], data[i + 2], data[i + 3]];
+                }
+
+                function setPixel(px, py, color) {
+                    const i = (py * canvas.width + px) * 4;
+                    data[i] = color[0];
+                    data[i + 1] = color[1];
+                    data[i + 2] = color[2];
+                    data[i + 3] = 255;
+                }
+
+                function colorsMatch(a, b) {
+                    return Math.abs(a[0] - b[0]) < 10 && Math.abs(a[1] - b[1]) < 10 && Math.abs(a[2] - b[2]) < 10;
+                }
+            }
+        }
+
+        // =====================
+        // MINESWEEPER
+        // =====================
+
+        function createMinesweeper(container, windowId) {
+            const ROWS = 9, COLS = 9, MINES = 10;
+            let grid = [], revealed = [], flagged = [], gameOver = false, minesLeft = MINES, time = 0, timerInterval = null, firstClick = true;
+
+            container.innerHTML = `<div class="minesweeper">
+                <div class="minesweeper-header">
+                    <div class="minesweeper-counter" id="mines-${windowId}">${String(MINES).padStart(3, '0')}</div>
+                    <button class="minesweeper-face" id="face-${windowId}">🙂</button>
+                    <div class="minesweeper-counter" id="timer-${windowId}">000</div>
+                </div>
+                <div class="minesweeper-grid" id="grid-${windowId}" style="grid-template-columns: repeat(${COLS}, 20px);"></div>
+            </div>`;
+
+            const gridEl = document.getElementById(`grid-${windowId}`);
+            const faceEl = document.getElementById(`face-${windowId}`);
+            const minesEl = document.getElementById(`mines-${windowId}`);
+            const timerEl = document.getElementById(`timer-${windowId}`);
+
+            function initGame() {
+                grid = []; revealed = []; flagged = []; gameOver = false; minesLeft = MINES; time = 0; firstClick = true;
+                if (timerInterval) clearInterval(timerInterval);
+                faceEl.textContent = '🙂';
+                minesEl.textContent = String(MINES).padStart(3, '0');
+                timerEl.textContent = '000';
+                for (let r = 0; r < ROWS; r++) { grid[r] = []; revealed[r] = []; flagged[r] = []; for (let c = 0; c < COLS; c++) { grid[r][c] = 0; revealed[r][c] = false; flagged[r][c] = false; } }
+                renderGrid();
+            }
+
+            function placeMines(exR, exC) {
+                let placed = 0;
+                while (placed < MINES) {
+                    const r = Math.floor(Math.random() * ROWS), c = Math.floor(Math.random() * COLS);
+                    if (Math.abs(r - exR) <= 1 && Math.abs(c - exC) <= 1) continue;
+                    if (grid[r][c] === -1) continue;
+                    grid[r][c] = -1; placed++;
+                }
+                for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+                    if (grid[r][c] === -1) continue;
+                    let count = 0;
+                    for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+                        const nr = r + dr, nc = c + dc;
+                        if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && grid[nr][nc] === -1) count++;
+                    }
+                    grid[r][c] = count;
+                }
+            }
+
+            function renderGrid() {
+                gridEl.innerHTML = '';
+                for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+                    const cell = document.createElement('button');
+                    cell.className = 'minesweeper-cell';
+                    if (revealed[r][c]) {
+                        cell.classList.add('revealed');
+                        if (grid[r][c] === -1) { cell.textContent = '💣'; cell.classList.add('mine'); }
+                        else if (grid[r][c] > 0) { cell.textContent = grid[r][c]; cell.dataset.count = grid[r][c]; }
+                    } else if (flagged[r][c]) cell.classList.add('flagged');
+                    cell.addEventListener('click', () => handleClick(r, c));
+                    cell.addEventListener('contextmenu', (e) => { e.preventDefault(); handleRightClick(r, c); });
+                    gridEl.appendChild(cell);
+                }
+            }
+
+            function handleClick(r, c) {
+                if (gameOver || flagged[r][c] || revealed[r][c]) return;
+                if (firstClick) { firstClick = false; placeMines(r, c); timerInterval = setInterval(() => { time++; timerEl.textContent = String(Math.min(time, 999)).padStart(3, '0'); }, 1000); }
+                reveal(r, c); renderGrid(); checkWin();
+            }
+
+            function handleRightClick(r, c) {
+                if (gameOver || revealed[r][c]) return;
+                flagged[r][c] = !flagged[r][c];
+                minesLeft += flagged[r][c] ? -1 : 1;
+                minesEl.textContent = String(Math.max(0, minesLeft)).padStart(3, '0');
+                renderGrid();
+            }
+
+            function reveal(r, c) {
+                if (r < 0 || r >= ROWS || c < 0 || c >= COLS || revealed[r][c] || flagged[r][c]) return;
+                revealed[r][c] = true;
+                if (grid[r][c] === -1) {
+                    gameOver = true; faceEl.textContent = '😵';
+                    if (timerInterval) clearInterval(timerInterval);
+                    for (let rr = 0; rr < ROWS; rr++) for (let cc = 0; cc < COLS; cc++) if (grid[rr][cc] === -1) revealed[rr][cc] = true;
+                    return;
+                }
+                if (grid[r][c] === 0) for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) reveal(r + dr, c + dc);
+            }
+
+            function checkWin() {
+                if (gameOver) return;
+                let safe = 0;
+                for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) if (!revealed[r][c] && grid[r][c] !== -1) safe++;
+                if (safe === 0) { gameOver = true; faceEl.textContent = '😎'; if (timerInterval) clearInterval(timerInterval); }
+            }
+
+            faceEl.addEventListener('click', initGame);
+            initGame();
+        }
+
+        // =====================
+        // SOLITAIRE
+        // =====================
+
+        function createSolitaire(container, windowId) {
+            const suits = ['♠', '♥', '♦', '♣'];
+            const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+            let stock = [], waste = [], foundations = [[], [], [], []], tableau = [[], [], [], [], [], [], []], dragData = null;
+
+            function createDeck() {
+                const deck = [];
+                for (const suit of suits) {
+                    for (let i = 0; i < values.length; i++) {
+                        deck.push({ suit, value: values[i], rank: i, color: (suit === '♥' || suit === '♦') ? 'red' : 'black', faceUp: false });
+                    }
+                }
+                return shuffle(deck);
+            }
+
+            function shuffle(arr) {
+                for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; }
+                return arr;
+            }
+
+            function initGame() {
+                const deck = createDeck();
+                stock = []; waste = []; foundations = [[], [], [], []]; tableau = [[], [], [], [], [], [], []];
+                for (let i = 0; i < 7; i++) { for (let j = i; j < 7; j++) { const card = deck.pop(); card.faceUp = (j === i); tableau[j].push(card); } }
+                stock = deck;
+                render();
+            }
+
+            function render() {
+                container.innerHTML = `<div class="solitaire">
+                    <div class="solitaire-top">
+                        <div class="solitaire-stock">
+                            <div class="solitaire-pile" id="stock-${windowId}"><div class="solitaire-slot"></div>${stock.length ? renderCard(stock[stock.length - 1], 0, true) : ''}</div>
+                            <div class="solitaire-pile" id="waste-${windowId}"><div class="solitaire-slot"></div>${waste.length ? renderCard(waste[waste.length - 1], 0, false) : ''}</div>
+                        </div>
+                        <div class="solitaire-foundations">
+                            ${foundations.map((f, i) => `<div class="solitaire-pile foundation" data-index="${i}" id="foundation-${i}-${windowId}"><div class="solitaire-slot"></div>${f.length ? renderCard(f[f.length - 1], 0, false) : ''}</div>`).join('')}
+                        </div>
+                    </div>
+                    <div class="solitaire-tableau">
+                        ${tableau.map((pile, i) => `<div class="solitaire-pile tableau-pile" data-index="${i}" id="tableau-${i}-${windowId}"><div class="solitaire-slot"></div>${pile.map((card, j) => renderCard(card, j * 20, !card.faceUp, i, j)).join('')}</div>`).join('')}
+                    </div>
+                </div>`;
+                setupSolitaireEvents();
+            }
+
+            function renderCard(card, top, faceDown, pileIndex, cardIndex) {
+                if (faceDown) return `<div class="card face-down" style="top:${top}px;"></div>`;
+                return `<div class="card ${card.color}" style="top:${top}px;" data-pile="${pileIndex}" data-card="${cardIndex}" data-suit="${card.suit}" data-rank="${card.rank}">
+                    <div class="card-corner">${card.value}<br>${card.suit}</div>
+                    <div class="card-center">${card.suit}</div>
+                    <div class="card-corner card-corner-br">${card.value}<br>${card.suit}</div>
+                </div>`;
+            }
+
+            function setupSolitaireEvents() {
+                const stockEl = document.getElementById(`stock-${windowId}`);
+                stockEl.addEventListener('click', () => {
+                    if (stock.length) { const card = stock.pop(); card.faceUp = true; waste.push(card); }
+                    else { stock = waste.reverse(); stock.forEach(c => c.faceUp = false); waste = []; }
+                    render();
+                });
+
+                const wasteEl = document.getElementById(`waste-${windowId}`);
+                const wasteCard = wasteEl.querySelector('.card:not(.face-down)');
+                if (wasteCard) {
+                    wasteCard.draggable = true;
+                    wasteCard.addEventListener('dragstart', (e) => { dragData = { source: 'waste', cards: [waste[waste.length - 1]] }; e.dataTransfer.effectAllowed = 'move'; });
+                }
+
+                document.querySelectorAll('.tableau-pile').forEach(pile => {
+                    pile.querySelectorAll('.card:not(.face-down)').forEach(cardEl => {
+                        cardEl.draggable = true;
+                        cardEl.addEventListener('dragstart', (e) => {
+                            const pileIdx = parseInt(cardEl.dataset.pile), cardIdx = parseInt(cardEl.dataset.card);
+                            dragData = { source: 'tableau', pileIndex: pileIdx, cardIndex: cardIdx, cards: tableau[pileIdx].slice(cardIdx) };
+                            e.dataTransfer.effectAllowed = 'move';
+                            cardEl.classList.add('dragging');
+                        });
+                        cardEl.addEventListener('dragend', () => cardEl.classList.remove('dragging'));
+                    });
+                    pile.addEventListener('dragover', (e) => e.preventDefault());
+                    pile.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        if (!dragData) return;
+                        const targetIdx = parseInt(pile.dataset.index), targetPile = tableau[targetIdx], topCard = targetPile.length ? targetPile[targetPile.length - 1] : null, draggedCard = dragData.cards[0];
+                        if (!topCard && draggedCard.rank === 12) moveCards(dragData, 'tableau', targetIdx);
+                        else if (topCard && topCard.faceUp && topCard.color !== draggedCard.color && topCard.rank === draggedCard.rank + 1) moveCards(dragData, 'tableau', targetIdx);
+                        dragData = null;
+                    });
+                });
+
+                document.querySelectorAll('.foundation').forEach(pile => {
+                    pile.addEventListener('dragover', (e) => e.preventDefault());
+                    pile.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        if (!dragData || dragData.cards.length !== 1) return;
+                        const targetIdx = parseInt(pile.dataset.index), foundation = foundations[targetIdx], draggedCard = dragData.cards[0];
+                        if (!foundation.length && draggedCard.rank === 0) moveCards(dragData, 'foundation', targetIdx);
+                        else if (foundation.length && foundation[foundation.length - 1].suit === draggedCard.suit && foundation[foundation.length - 1].rank === draggedCard.rank - 1) moveCards(dragData, 'foundation', targetIdx);
+                        dragData = null;
+                    });
+                });
+
+                container.addEventListener('dblclick', (e) => {
+                    const cardEl = e.target.closest('.card:not(.face-down)');
+                    if (!cardEl) return;
+                    let card, sourcePile, sourceIdx;
+                    if (cardEl.closest(`#waste-${windowId}`)) { if (!waste.length) return; card = waste[waste.length - 1]; sourcePile = 'waste'; }
+                    else { const pileIdx = parseInt(cardEl.dataset.pile), cardIdx = parseInt(cardEl.dataset.card); if (cardIdx !== tableau[pileIdx].length - 1) return; card = tableau[pileIdx][cardIdx]; sourcePile = 'tableau'; sourceIdx = pileIdx; }
+                    for (let i = 0; i < 4; i++) {
+                        const f = foundations[i];
+                        if ((!f.length && card.rank === 0) || (f.length && f[f.length - 1].suit === card.suit && f[f.length - 1].rank === card.rank - 1)) {
+                            if (sourcePile === 'waste') waste.pop(); else { tableau[sourceIdx].pop(); flipTopCard(sourceIdx); }
+                            f.push(card); render(); checkWin(); return;
+                        }
+                    }
+                });
+            }
+
+            function moveCards(dragData, targetType, targetIdx) {
+                if (dragData.source === 'waste') waste.pop();
+                else if (dragData.source === 'tableau') { tableau[dragData.pileIndex].splice(dragData.cardIndex); flipTopCard(dragData.pileIndex); }
+                if (targetType === 'tableau') tableau[targetIdx].push(...dragData.cards);
+                else if (targetType === 'foundation') { foundations[targetIdx].push(...dragData.cards); checkWin(); }
+                render();
+            }
+
+            function flipTopCard(pileIdx) { const pile = tableau[pileIdx]; if (pile.length && !pile[pile.length - 1].faceUp) pile[pile.length - 1].faceUp = true; }
+            function checkWin() { if (foundations.reduce((sum, f) => sum + f.length, 0) === 52) setTimeout(() => alert('🎉 You Win!'), 100); }
+
+            initGame();
+        }
+
+        // =====================
+        // SCREENSAVER
+        // =====================
+
+        let screensaverAnimationId = null;
+
+        function startScreensaver() {
+            const screensaver = document.getElementById('screensaver');
+            const canvas = document.getElementById('screensaverCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            screensaver.classList.add('active');
+
+            const pipes = [];
+            const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
+            for (let i = 0; i < 5; i++) {
+                pipes.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, dx: (Math.random() - 0.5) * 4, dy: (Math.random() - 0.5) * 4, color: colors[Math.floor(Math.random() * colors.length)], history: [] });
+            }
+
+            function animate() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                pipes.forEach(pipe => {
+                    pipe.history.push({ x: pipe.x, y: pipe.y });
+                    if (pipe.history.length > 50) pipe.history.shift();
+                    ctx.strokeStyle = pipe.color;
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    pipe.history.forEach((p, i) => { if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); });
+                    ctx.stroke();
+                    pipe.x += pipe.dx; pipe.y += pipe.dy;
+                    if (pipe.x < 0 || pipe.x > canvas.width) pipe.dx *= -1;
+                    if (pipe.y < 0 || pipe.y > canvas.height) pipe.dy *= -1;
+                    if (Math.random() < 0.02) { pipe.dx = (Math.random() - 0.5) * 4; pipe.dy = (Math.random() - 0.5) * 4; }
+                });
+                screensaverAnimationId = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        function stopScreensaver() {
+            document.getElementById('screensaver').classList.remove('active');
+            if (screensaverAnimationId) { cancelAnimationFrame(screensaverAnimationId); screensaverAnimationId = null; }
+        }
+
+        function resetScreensaverTimer() {
+            if (screensaverTimeout) clearTimeout(screensaverTimeout);
+            screensaverTimeout = setTimeout(startScreensaver, SCREENSAVER_DELAY);
+        }
+
+        // =====================
+        // EVENTS
+        // =====================
+
+        function setupEventListeners() {
+            document.getElementById('startButton').addEventListener('click', (e) => { e.stopPropagation(); toggleStartMenu(); });
+            document.getElementById('desktop').addEventListener('click', (e) => {
+                if (e.target.id === 'desktop' || e.target.id === 'desktopIcons') { closeStartMenu(); selectIcon(null); }
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                resetScreensaverTimer();
+                if (document.getElementById('screensaver').classList.contains('active')) stopScreensaver();
+                if (dragState) {
+                    if (dragState.type === 'move') { dragState.window.style.left = (e.clientX - dragState.startX) + 'px'; dragState.window.style.top = (e.clientY - dragState.startY) + 'px'; }
+                    else if (dragState.type === 'resize') { dragState.window.style.width = Math.max(200, dragState.startWidth + e.clientX - dragState.startX) + 'px'; dragState.window.style.height = Math.max(100, dragState.startHeight + e.clientY - dragState.startY) + 'px'; }
+                }
+                if (iconDragState) {
+                    const dx = e.clientX - iconDragState.startX, dy = e.clientY - iconDragState.startY;
+                    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+                        iconDragState.icon.classList.add('dragging');
+                        iconDragState.icon.style.left = (iconDragState.iconStartX + dx) + 'px';
+                        iconDragState.icon.style.top = (iconDragState.iconStartY + dy) + 'px';
+                    }
+                }
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (iconDragState) iconDragState.icon.classList.remove('dragging');
+                iconDragState = null; dragState = null;
+            });
+
+            document.addEventListener('keydown', () => {
+                resetScreensaverTimer();
+                if (document.getElementById('screensaver').classList.contains('active')) stopScreensaver();
+            });
+        }
+
+        init();
+    </script>
+</body>
+</html>
