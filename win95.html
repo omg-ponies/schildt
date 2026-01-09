@@ -17,7 +17,23 @@
             --title-inactive: linear-gradient(90deg, #808080, #b0b0b0);
         }
 
-        html, body { height: 100%; overflow: hidden; font-family: Arial, sans-serif; font-size: 11px; }
+        html, body { height: 100%; overflow: hidden; font-family: Arial, sans-serif; font-size: 11px; cursor: default; }
+
+        /* Windows 95 Cursors */
+        .hourglass { cursor: wait !important; }
+        .hourglass * { cursor: wait !important; }
+        button, .icon, .start-button, .taskbar-program { cursor: pointer; }
+        .title-bar { cursor: default; }
+        .resize-handle { cursor: nwse-resize; }
+
+        /* Window dragging outline */
+        .window-drag-outline {
+            position: absolute;
+            border: 2px dashed #000;
+            background: transparent;
+            pointer-events: none;
+            z-index: 10000;
+        }
 
         .desktop {
             width: 100%; height: 100%;
@@ -205,10 +221,10 @@
 
         const startMenuConfig = [
             { type: 'item', id: 'programs', icon: '📁', label: 'Programs', arrow: true, submenu: [
-                { id: 'terminal', icon: '💻', label: 'Terminal' },
                 { id: 'notepad', icon: '📝', label: 'Notepad' },
                 { id: 'paint', icon: '🎨', label: 'Paint' },
                 { type: 'divider' },
+                { id: 'games', icon: '🎮', label: 'Games' },
                 { id: 'minesweeper', icon: '💣', label: 'Minesweeper' },
                 { id: 'solitaire', icon: '🃏', label: 'Solitaire' },
             ]},
@@ -216,8 +232,16 @@
                 { id: 'about', icon: '📄', label: 'README.txt' },
             ]},
             { type: 'item', id: 'settings', icon: '⚙️', label: 'Settings', arrow: true, submenu: [
-                { id: 'screensaver', icon: '🖥️', label: 'Screen Saver' },
+                { icon: '🎛️', label: 'Control Panel' },
+                { icon: '🖨️', label: 'Printers' },
+                { icon: '📊', label: 'Taskbar' },
             ]},
+            { type: 'item', id: 'find', icon: '🔍', label: 'Find', arrow: true, submenu: [
+                { icon: '📄', label: 'Files or Folders...' },
+                { icon: '💻', label: 'Computer...' },
+            ]},
+            { type: 'item', icon: '❓', label: 'Help' },
+            { type: 'item', id: 'terminal', icon: '▶️', label: 'Run...' },
             { type: 'divider' },
             { type: 'item', id: 'shutdown', icon: '⭕', label: 'Shut Down...', action: 'shutdown' },
         ];
@@ -232,7 +256,6 @@
             minesweeper: { title: 'Minesweeper', icon: '💣', width: 280, height: 380, menuBar: ['Game', 'Help'], createContent: createMinesweeper },
             solitaire: { title: 'Solitaire', icon: '🃏', width: 800, height: 600, menuBar: ['Game', 'Help'], createContent: createSolitaire },
             recycle: { title: 'Recycle Bin', icon: '🗑️', width: 400, height: 300, content: '<div style="padding:40px;text-align:center;color:#808080;">🗑️<br><br>Recycle Bin is empty</div>' },
-            screensaver: { title: 'Screen Saver Settings', icon: '🖥️', width: 400, height: 200, content: '<div style="padding:20px;text-align:center;"><p style="margin-bottom:20px;">Click the button to preview the screen saver.</p><button onclick="startScreensaver()" style="padding:8px 24px;font-size:14px;cursor:pointer;">Preview</button><br><br><small>Move mouse or press any key to exit</small></div>' },
             // CD-ROM Games
             simtower: { title: 'SimTower', icon: '🏢', isCdRom: true, cdName: 'SimTower' },
             myst: { title: 'Myst', icon: '📀', isCdRom: true, cdName: 'Myst' },
@@ -344,8 +367,17 @@
                 return;
             }
 
+            // Show hourglass cursor
+            document.body.classList.add('hourglass');
+
+            // Variable delay based on app complexity
+            const heavyApps = ['paint', 'solitaire', 'minesweeper', 'games'];
+            const delay = heavyApps.includes(appId) ? (400 + Math.random() * 200) : (200 + Math.random() * 100);
+
             // Add Win95-style delay before window appears
             setTimeout(() => {
+                // Remove hourglass cursor
+                document.body.classList.remove('hourglass');
                 const windowId = `window-${Date.now()}`;
                 const windowEl = document.createElement('div');
                 windowEl.className = 'window';
@@ -392,7 +424,7 @@
                 addTaskbarButton(windowData);
                 setActiveWindow(windowData);
                 setupWindowEvents(windowEl, windowData);
-            }, 200); // Win95-style delay
+            }, delay); // Win95-style variable delay
         }
 
         function setupWindowEvents(windowEl, windowData) {
@@ -401,7 +433,25 @@
             windowEl.addEventListener('mousedown', () => setActiveWindow(windowData));
             titleBar.addEventListener('mousedown', (e) => {
                 if (e.target.tagName === 'BUTTON' || windowEl.classList.contains('maximized')) return;
-                dragState = { type: 'move', window: windowEl, startX: e.clientX - windowEl.offsetLeft, startY: e.clientY - windowEl.offsetTop };
+
+                // Create drag outline for Win95 lag effect
+                const outline = document.createElement('div');
+                outline.className = 'window-drag-outline';
+                outline.style.left = windowEl.offsetLeft + 'px';
+                outline.style.top = windowEl.offsetTop + 'px';
+                outline.style.width = windowEl.offsetWidth + 'px';
+                outline.style.height = windowEl.offsetHeight + 'px';
+                document.body.appendChild(outline);
+
+                dragState = {
+                    type: 'move',
+                    window: windowEl,
+                    outline: outline,
+                    startX: e.clientX - windowEl.offsetLeft,
+                    startY: e.clientY - windowEl.offsetTop,
+                    originalLeft: windowEl.offsetLeft,
+                    originalTop: windowEl.offsetTop
+                };
             });
             resizeHandle.addEventListener('mousedown', (e) => {
                 if (windowEl.classList.contains('maximized')) return;
@@ -1132,7 +1182,16 @@
                 resetScreensaverTimer();
                 if (document.getElementById('screensaver').classList.contains('active')) stopScreensaver();
                 if (dragState) {
-                    if (dragState.type === 'move') { dragState.window.style.left = (e.clientX - dragState.startX) + 'px'; dragState.window.style.top = (e.clientY - dragState.startY) + 'px'; }
+                    if (dragState.type === 'move') {
+                        // Move outline instead of window (Win95 lag effect)
+                        if (dragState.outline) {
+                            dragState.outline.style.left = (e.clientX - dragState.startX) + 'px';
+                            dragState.outline.style.top = (e.clientY - dragState.startY) + 'px';
+                        } else {
+                            dragState.window.style.left = (e.clientX - dragState.startX) + 'px';
+                            dragState.window.style.top = (e.clientY - dragState.startY) + 'px';
+                        }
+                    }
                     else if (dragState.type === 'resize') { dragState.window.style.width = Math.max(200, dragState.startWidth + e.clientX - dragState.startX) + 'px'; dragState.window.style.height = Math.max(100, dragState.startHeight + e.clientY - dragState.startY) + 'px'; }
                 }
                 if (iconDragState) {
@@ -1146,6 +1205,12 @@
             });
 
             document.addEventListener('mouseup', () => {
+                // Apply window position from outline on mouseup (Win95 lag effect)
+                if (dragState && dragState.outline) {
+                    dragState.window.style.left = dragState.outline.style.left;
+                    dragState.window.style.top = dragState.outline.style.top;
+                    dragState.outline.remove();
+                }
                 if (iconDragState) iconDragState.icon.classList.remove('dragging');
                 iconDragState = null; dragState = null;
             });
