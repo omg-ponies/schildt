@@ -59,20 +59,20 @@
             background: #000;
             z-index: 99999;
             opacity: 0;
-            transition: opacity 2s ease-out;
+            transition: opacity 2.5s ease-out;
             pointer-events: none;
         }
         .shutdown-overlay.active { opacity: 1; pointer-events: all; }
 
-        /* Start menu animation */
+        /* Start menu animation - slower for Win95 feel */
         .start-menu {
             animation: none;
         }
         .start-menu.open {
-            animation: slideUp 0.15s ease-out;
+            animation: slideUp 0.25s ease-out;
         }
         @keyframes slideUp {
-            from { transform: translateY(20px); opacity: 0; }
+            from { transform: translateY(25px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
 
@@ -321,7 +321,7 @@
             aoe: { title: 'Age of Empires', icon: '⚔️', isCdRom: true, cdName: 'Age of Empires' },
         };
 
-        let windows = [], activeWindow = null, zIndexCounter = 100, dragState = null, iconDragState = null;
+        let windows = [], activeWindow = null, zIndexCounter = 100, dragState = null, iconDragState = null, lastDragUpdate = 0;
         let screensaverTimeout = null;
         let selectionRect = null, selectionStart = null;
         const SCREENSAVER_DELAY = 120000;
@@ -442,9 +442,9 @@
             // Show hourglass cursor
             document.body.classList.add('hourglass');
 
-            // Variable delay based on app complexity
+            // Variable delay based on app complexity - slower for authentic Win95 feel
             const heavyApps = ['paint', 'solitaire', 'minesweeper', 'games'];
-            const delay = heavyApps.includes(appId) ? (400 + Math.random() * 200) : (200 + Math.random() * 100);
+            const delay = heavyApps.includes(appId) ? (500 + Math.random() * 300) : (250 + Math.random() * 150);
 
             // Add Win95-style delay before window appears
             setTimeout(() => {
@@ -463,7 +463,7 @@
                 windowEl.style.height = app.height + 'px';
                 windowEl.style.zIndex = ++zIndexCounter;
                 windowEl.style.opacity = '0';
-                windowEl.style.transition = 'opacity 0.15s ease-in';
+                windowEl.style.transition = 'opacity 0.25s ease-in';
 
                 const menuItems = app.menuBar || ['File', 'Edit', 'View', 'Help'];
                 const menuBarHTML = `<div class="menu-bar">${menuItems.map(m => `<span class="menu-item">${m}</span>`).join('')}</div>`;
@@ -1294,12 +1294,17 @@
                 resetScreensaverTimer();
                 if (document.getElementById('screensaver').classList.contains('active')) stopScreensaver();
                 if (dragState) {
+                    // Throttle drag updates for authentic Win95 choppy feel (30-35 FPS instead of 60)
+                    const now = Date.now();
+                    const throttleDelay = 30; // ms between updates
+
                     if (dragState.type === 'move') {
                         // Move outline instead of window (Win95 lag effect)
-                        if (dragState.outline) {
+                        if (dragState.outline && (now - lastDragUpdate >= throttleDelay)) {
                             dragState.outline.style.left = (e.clientX - dragState.startX) + 'px';
                             dragState.outline.style.top = (e.clientY - dragState.startY) + 'px';
-                        } else {
+                            lastDragUpdate = now;
+                        } else if (!dragState.outline) {
                             dragState.window.style.left = (e.clientX - dragState.startX) + 'px';
                             dragState.window.style.top = (e.clientY - dragState.startY) + 'px';
                         }
