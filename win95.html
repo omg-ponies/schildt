@@ -351,8 +351,6 @@
             recycle: { title: 'Recycle Bin', icon: '🗑️', width: 400, height: 300, content: '<div style="padding:40px;text-align:center;color:#808080;">🗑️<br><br>Recycle Bin is empty</div>' },
             // CD-ROM Games
             simtower: { title: 'SimTower', icon: '🏢', isCdRom: true, cdName: 'SimTower' },
-            myst: { title: 'Myst', icon: '📀', isCdRom: true, cdName: 'Myst' },
-            civilization2: { title: 'Civilization II', icon: '🏛️', isCdRom: true, cdName: 'Civilization II' },
             themehospital: { title: 'Theme Hospital', icon: '🏥', isCdRom: true, cdName: 'Theme Hospital' },
             aoe: { title: 'Age of Empires', icon: '⚔️', isCdRom: true, cdName: 'Age of Empires' },
             display: { title: 'Display Properties', icon: '🖥️', width: 450, height: 500, menuBar: [], createContent: createDisplayProperties },
@@ -445,15 +443,42 @@
 
         function shutdown() {
             closeStartMenu();
-            const overlay = document.getElementById('shutdownOverlay');
 
-            // Slow fade to black (takes 3-4 seconds)
-            setTimeout(() => overlay.classList.add('active'), 100);
+            // Close all windows slowly and sluggishly (one by one)
+            const windowsToClose = [...windows];
+            let delay = 0;
 
-            // Keep black screen
+            windowsToClose.forEach((win, index) => {
+                setTimeout(() => {
+                    win.element.style.transition = 'opacity 0.8s ease-out';
+                    win.element.style.opacity = '0';
+                    setTimeout(() => {
+                        if (win.element && win.element.parentNode) {
+                            win.element.remove();
+                        }
+                    }, 800);
+                }, delay);
+                delay += 400; // Each window takes 400ms to start closing
+            });
+
+            // Show blue shutdown screen after windows close
             setTimeout(() => {
-                document.body.style.background = '#000';
-            }, 3000);
+                const bsod = document.getElementById('bsod');
+                bsod.innerHTML = `
+                    <div style="text-align:center;padding-top:100px;">
+                        <div style="font-size:24px;margin-bottom:40px;">Windows is shutting down...</div>
+                        <div style="font-size:16px;opacity:0.8;">Please wait</div>
+                    </div>
+                `;
+                bsod.classList.add('active');
+
+                // Turn off screen (black) after blue shutdown screen
+                setTimeout(() => {
+                    bsod.style.transition = 'opacity 1.5s ease-out';
+                    bsod.style.opacity = '0';
+                    document.body.style.background = '#000';
+                }, 2000);
+            }, delay + 500);
         }
 
         function updateClock() {
@@ -712,8 +737,6 @@
         function createGamesFolder(container, windowId) {
             const games = [
                 { id: 'simtower', icon: '🏢', label: 'SimTower.lnk' },
-                { id: 'myst', icon: '🌀', label: 'Myst.lnk' },
-                { id: 'civilization2', icon: '🏛️', label: 'Civilization II.lnk' },
                 { id: 'themehospital', icon: '🏥', label: 'Theme Hospital.lnk' },
                 { id: 'aoe', icon: '⚔️', label: 'Age of Empires.lnk' },
             ];
@@ -1481,12 +1504,7 @@
                 if (pressedKeys.size >= 3) {
                     const bsod = document.getElementById('bsod');
                     bsod.classList.add('active');
-
-                    // Reload page on any key press after BSOD
-                    const reloadHandler = () => {
-                        location.reload();
-                    };
-                    document.addEventListener('keydown', reloadHandler, { once: true });
+                    // Stay blue forever - no escape!
                 }
             });
 
