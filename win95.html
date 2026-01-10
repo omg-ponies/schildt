@@ -444,21 +444,17 @@
         function shutdown() {
             closeStartMenu();
 
-            // Close all windows slowly and sluggishly (one by one)
+            // Close all windows one by one (instant close, no fade - authentic Win95!)
             const windowsToClose = [...windows];
             let delay = 0;
 
             windowsToClose.forEach((win, index) => {
                 setTimeout(() => {
-                    win.element.style.transition = 'opacity 0.8s ease-out';
-                    win.element.style.opacity = '0';
-                    setTimeout(() => {
-                        if (win.element && win.element.parentNode) {
-                            win.element.remove();
-                        }
-                    }, 800);
+                    if (win.element && win.element.parentNode) {
+                        win.element.remove();
+                    }
                 }, delay);
-                delay += 400; // Each window takes 400ms to start closing
+                delay += 300; // Delay between window closes
             });
 
             // Show blue shutdown screen after windows close
@@ -472,13 +468,12 @@
                 `;
                 bsod.classList.add('active');
 
-                // Turn off screen (black) after blue shutdown screen
+                // Turn off screen (black) after blue shutdown screen - instant, no fade
                 setTimeout(() => {
-                    bsod.style.transition = 'opacity 1.5s ease-out';
-                    bsod.style.opacity = '0';
+                    bsod.style.display = 'none';
                     document.body.style.background = '#000';
                 }, 2000);
-            }, delay + 500);
+            }, delay + 400);
         }
 
         function updateClock() {
