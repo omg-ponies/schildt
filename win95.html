@@ -309,7 +309,6 @@
     <div class="shutdown-overlay" id="shutdownOverlay"></div>
 
     <div class="bsod" id="bsod">
-        <div class="bsod-title"> Windows </div>
         <div>A fatal exception 0E has occurred at 0028:C0011E36 in VXD VMM(01) +</div>
         <div>00010E36. The current application will be terminated.</div>
         <br>
@@ -480,22 +479,59 @@
                 delay += 300; // Delay between window closes
             });
 
-            // Show blue shutdown screen after windows close
+            // Show MS-DOS style shutdown screen after windows close
             setTimeout(() => {
                 const bsod = document.getElementById('bsod');
-                bsod.innerHTML = `
-                    <div style="text-align:center;padding-top:100px;">
-                        <div style="font-size:24px;margin-bottom:40px;">Windows is shutting down...</div>
-                        <div style="font-size:16px;opacity:0.8;">Please wait</div>
-                    </div>
-                `;
+                bsod.style.background = '#000';
+                bsod.style.color = '#ffffff';
+                bsod.style.fontFamily = 'Courier New, monospace';
+                bsod.style.fontSize = '14px';
+                bsod.style.padding = '20px';
+                bsod.style.lineHeight = '1.3';
+                bsod.innerHTML = '<div id="shutdown-text"></div>';
                 bsod.classList.add('active');
 
-                // Turn off screen (black) after blue shutdown screen - instant, no fade
-                setTimeout(() => {
-                    bsod.style.display = 'none';
-                    document.body.style.background = '#000';
-                }, 2000);
+                const shutdownText = document.getElementById('shutdown-text');
+                const messages = [
+                    'Closing all programs...',
+                    'Saving system configuration...',
+                    '',
+                    'Shutting down system services:',
+                    '  - Network connections',
+                    '  - Print spooler',
+                    '  - Event log',
+                    '  - Task scheduler',
+                    '',
+                    'Flushing file system buffers...',
+                    'Stopping remaining processes...',
+                    '',
+                    'Writing configuration to disk...',
+                    'Preparing to shut down...',
+                    '',
+                    'System halted.',
+                    '',
+                    'It is now safe to turn off your computer.'
+                ];
+
+                let lineIndex = 0;
+                const lineDelay = 1400; // ~25 seconds total (18 lines × 1.4s)
+
+                function addLine() {
+                    if (lineIndex < messages.length) {
+                        shutdownText.innerHTML += messages[lineIndex] + '<br>';
+                        lineIndex++;
+                        setTimeout(addLine, lineDelay);
+                    } else {
+                        // Final black screen after all text shown - page reload only
+                        setTimeout(() => {
+                            bsod.style.display = 'none';
+                            document.body.style.background = '#000';
+                            document.body.innerHTML = '';
+                        }, 2000);
+                    }
+                }
+
+                addLine();
             }, delay + 400);
         }
 
@@ -722,7 +758,7 @@
         function createDriveBrowser(container, driveLetter) {
             const files = {
                 'C': [
-                    { name: 'Windows', icon: '📁', type: 'folder' },
+                    { name: 'System', icon: '📁', type: 'folder' },
                     { name: 'Program Files', icon: '📁', type: 'folder' },
                     { name: 'My Documents', icon: '📁', type: 'folder' },
                     { name: 'CONFIG.SYS', icon: '📄', type: 'file' },
