@@ -36,22 +36,6 @@
             box-shadow: inset 0 0 0 1px #fff;
         }
 
-        /* Boot screen */
-        .boot-screen {
-            position: fixed;
-            inset: 0;
-            background: #000;
-            color: #fff;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 100000;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-        }
-        .boot-screen.hidden { display: none; }
-
         /* Shutdown overlay */
         .shutdown-overlay {
             position: fixed;
@@ -105,6 +89,50 @@
             background: rgba(0, 0, 128, 0.1);
             pointer-events: none;
             z-index: 50;
+        }
+
+        /* Context Menu */
+        .context-menu {
+            position: absolute;
+            background: var(--win-bg);
+            border: 2px outset var(--win-light);
+            box-shadow: 2px 2px 4px rgba(0,0,0,0.4);
+            min-width: 150px;
+            z-index: 10001;
+            display: none;
+            padding: 2px;
+        }
+        .context-menu.active { display: block; }
+        .context-menu-item {
+            display: flex;
+            align-items: center;
+            padding: 3px 20px 3px 24px;
+            cursor: pointer;
+            position: relative;
+            font-size: 11px;
+        }
+        .context-menu-item:hover:not(.disabled) {
+            background: #000080;
+            color: white;
+        }
+        .context-menu-item.disabled {
+            color: var(--win-dark);
+            cursor: default;
+        }
+        .context-menu-item .icon {
+            position: absolute;
+            left: 4px;
+            font-size: 14px;
+        }
+        .context-menu-item .arrow {
+            position: absolute;
+            right: 4px;
+        }
+        .context-menu-divider {
+            height: 1px;
+            background: var(--win-dark);
+            margin: 2px 1px;
+            border-bottom: 1px solid var(--win-light);
         }
 
         .desktop {
@@ -278,11 +306,6 @@
         <canvas id="screensaverCanvas"></canvas>
     </div>
 
-    <div class="boot-screen" id="bootScreen">
-        <div style="margin-bottom:40px;font-size:24px;letter-spacing:4px;">Schildt95</div>
-        <div style="opacity:0.7;">Starting Windows 95...</div>
-    </div>
-
     <div class="shutdown-overlay" id="shutdownOverlay"></div>
 
     <div class="bsod" id="bsod">
@@ -297,17 +320,19 @@
         <div>Press any key to continue _</div>
     </div>
 
+    <div class="context-menu" id="contextMenu"></div>
+
     <script>
         // Config
         const desktopIconsConfig = [
-            { id: 'terminal', icon: '💻', label: 'Terminal', x: 10, y: 10 },
-            { id: 'about', icon: '📄', label: 'README', x: 10, y: 90 },
-            { id: 'projects', icon: '📁', label: 'Projects', x: 10, y: 170 },
-            { id: 'games', icon: '🎮', label: 'Games', x: 10, y: 250 },
-            { id: 'paint', icon: '🎨', label: 'Paint', x: 10, y: 330 },
-            { id: 'minesweeper', icon: '💣', label: 'Minesweeper', x: 10, y: 410 },
-            { id: 'solitaire', icon: '🃏', label: 'Solitaire', x: 10, y: 490 },
-            { id: 'recycle', icon: '🗑️', label: 'Recycle Bin', x: 10, y: 570 },
+            { id: 'mycomputer', icon: '🖥️', label: 'My Computer', x: 10, y: 10, fileType: 'folder', renameable: false },
+            { id: 'recycle', icon: '🗑️', label: 'Recycle Bin', x: 10, y: 90, fileType: 'folder', renameable: false },
+            { id: 'about', icon: '📄', label: 'README.txt', x: 10, y: 170, fileType: 'txt', renameable: true },
+            { id: 'projects', icon: '📁', label: 'Projects', x: 10, y: 250, fileType: 'folder', renameable: true },
+            { id: 'games', icon: '🎮', label: 'Games', x: 10, y: 330, fileType: 'folder', renameable: true },
+            { id: 'paint', icon: '🎨', label: 'Paint', x: 10, y: 410, fileType: 'exe', renameable: false },
+            { id: 'minesweeper', icon: '💣', label: 'Minesweeper', x: 10, y: 490, fileType: 'exe', renameable: false },
+            { id: 'solitaire', icon: '🃏', label: 'Solitaire', x: 10, y: 570, fileType: 'exe', renameable: false },
         ];
 
         const startMenuConfig = [
@@ -340,8 +365,11 @@
         ];
 
         const apps = {
+            mycomputer: { title: 'My Computer', icon: '🖥️', width: 500, height: 400, menuBar: ['File', 'Edit', 'View', 'Help'], createContent: createMyComputer },
             terminal: { title: 'Terminal', icon: '💻', width: 600, height: 400, content: '<div style="background:#0a0a0a;color:#33ff33;font-family:Consolas,monospace;padding:10px;height:100%;font-size:14px;">C:\\> _</div>' },
-            about: { title: 'README.txt - Notepad', icon: '📄', width: 500, height: 350, content: '<div style="padding:10px;font-family:Courier New,monospace;font-size:12px;white-space:pre-wrap;"> ███████╗ ██████╗██╗  ██╗██╗██╗     ██████╗ ████████╗\n ██╔════╝██╔════╝██║  ██║██║██║     ██╔══██╗╚══██╔══╝\n ███████╗██║     ███████║██║██║     ██║  ██║   ██║   \n ╚════██║██║     ██╔══██║██║██║     ██║  ██║   ██║   \n ███████║╚██████╗██║  ██║██║███████╗██████╔╝   ██║   \n ╚══════╝ ╚═════╝╚═╝  ╚═╝╚═╝╚══════╝╚═════╝    ╚═╝   \n\n\nhttps://linkedin.com/in/johannesschildt</div>' },
+            about: { title: 'README.txt - Notepad', icon: '📄', width: 500, height: 350, content: '<textarea style="width:100%;height:100%;border:none;resize:none;padding:10px;font-family:Courier New,monospace;font-size:12px;outline:none;"> ███████╗ ██████╗██╗  ██╗██╗██╗     ██████╗ ████████╗\n ██╔════╝██╔════╝██║  ██║██║██║     ██╔══██╗╚══██╔══╝\n ███████╗██║     ███████║██║██║     ██║  ██║   ██║   \n ╚════██║██║     ██╔══██║██║██║     ██║  ██║   ██║   \n ███████║╚██████╗██║  ██║██║███████╗██████╔╝   ██║   \n ╚══════╝ ╚═════╝╚═╝  ╚═╝╚═╝╚══════╝╚═════╝    ╚═╝   \n\n\nhttps://linkedin.com/in/johannesschildt</textarea>' },
+            cdrive: { title: '(C:)', icon: '💾', width: 500, height: 400, menuBar: ['File', 'Edit', 'View', 'Help'], createContent: (container) => createDriveBrowser(container, 'C') },
+            // ddrive (D:) is CD-ROM with no disc - shows error from My Computer
             notepad: { title: 'Untitled - Notepad', icon: '📝', width: 500, height: 350, content: '<textarea style="width:100%;height:100%;border:none;resize:none;padding:10px;font-family:Courier New,monospace;font-size:12px;outline:none;"></textarea>' },
             projects: { title: 'Projects', icon: '📁', width: 550, height: 400, content: '<div style="padding:20px;display:grid;grid-template-columns:repeat(3,1fr);gap:20px;text-align:center;"><div style="cursor:pointer;" onclick="window.open(\'https://kry.se\')"><div style="font-size:48px;">🏥</div><div>Kry</div></div><div style="cursor:pointer;" onclick="window.open(\'https://elf.care\')"><div style="font-size:48px;">🧝</div><div>Elfcare</div></div><div style="cursor:pointer;" onclick="window.open(\'https://alwayssummer.se\')"><div style="font-size:48px;">☀️</div><div>ASAM</div></div></div>' },
             games: { title: 'Games', icon: '🎮', width: 500, height: 350, isFolder: true, createContent: createGamesFolder },
@@ -362,11 +390,6 @@
         const SCREENSAVER_DELAY = 120000;
 
         function init() {
-            // Show boot screen for 2 seconds
-            setTimeout(() => {
-                document.getElementById('bootScreen').classList.add('hidden');
-            }, 2000);
-
             createDesktopIcons();
             createStartMenu();
             setupEventListeners();
@@ -650,6 +673,89 @@
                 else setActiveWindow(windowData);
             });
             document.getElementById('taskbarPrograms').appendChild(btn);
+        }
+
+        // =====================
+        // MY COMPUTER
+        // =====================
+
+        function createMyComputer(container, windowId) {
+            const drives = [
+                { id: 'adrive', icon: '💾', label: '3½ Floppy (A:)', type: 'floppy' },
+                { id: 'cdrive', icon: '💾', label: '(C:)', type: 'hdd' },
+                { id: 'ddrive', icon: '📀', label: '(D:)', type: 'cdrom' },
+            ];
+
+            container.style.background = 'white';
+            container.style.padding = '10px';
+            container.innerHTML = `
+                <div style="display:flex;flex-wrap:wrap;gap:30px;padding:10px;">
+                    ${drives.map(d => `
+                        <div class="folder-icon" data-drive="${d.id}" style="width:80px;text-align:center;cursor:pointer;padding:8px;">
+                            <div style="font-size:32px;margin-bottom:6px;">${d.icon}</div>
+                            <div style="font-size:11px;word-wrap:break-word;">${d.label}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            container.querySelectorAll('.folder-icon').forEach(icon => {
+                icon.addEventListener('dblclick', () => {
+                    const driveId = icon.dataset.drive;
+                    if (driveId === 'adrive') {
+                        // Show error for floppy - no disk
+                        alert('A:\\ is not accessible.\n\nThe device is not ready.');
+                    } else if (driveId === 'ddrive') {
+                        // Show error for CD-ROM - no disc inserted
+                        alert('D:\\ is not accessible.\n\nThe device is not ready.');
+                    } else {
+                        openWindow(driveId);
+                    }
+                });
+            });
+        }
+
+        // =====================
+        // DRIVE BROWSER
+        // =====================
+
+        function createDriveBrowser(container, driveLetter) {
+            const files = {
+                'C': [
+                    { name: 'Windows', icon: '📁', type: 'folder' },
+                    { name: 'Program Files', icon: '📁', type: 'folder' },
+                    { name: 'My Documents', icon: '📁', type: 'folder' },
+                    { name: 'CONFIG.SYS', icon: '📄', type: 'file' },
+                    { name: 'AUTOEXEC.BAT', icon: '📄', type: 'file' },
+                ]
+                // D: drive (CD-ROM) has no disc - handled by error in My Computer
+            };
+
+            const driveFiles = files[driveLetter] || [];
+
+            container.style.background = 'white';
+            container.style.padding = '10px';
+            container.innerHTML = `
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                    ${driveFiles.map(f => `
+                        <div class="file-item" style="display:flex;align-items:center;gap:8px;padding:4px;cursor:pointer;">
+                            <div style="font-size:16px;">${f.icon}</div>
+                            <div style="font-size:11px;">${f.name}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            container.querySelectorAll('.file-item').forEach((item, idx) => {
+                item.addEventListener('mouseenter', () => {
+                    item.style.background = '#000080';
+                    item.style.color = 'white';
+                });
+                item.addEventListener('mouseleave', () => {
+                    item.style.background = '';
+                    item.style.color = '';
+                });
+            });
         }
 
         // =====================
@@ -1401,6 +1507,115 @@
         }
 
         // =====================
+        // CONTEXT MENUS
+        // =====================
+
+        let contextMenuTarget = null;
+
+        function showContextMenu(x, y, items) {
+            const menu = document.getElementById('contextMenu');
+            menu.innerHTML = items.map(item => {
+                if (item.divider) {
+                    return '<div class="context-menu-divider"></div>';
+                }
+                const disabled = item.disabled ? ' disabled' : '';
+                return `<div class="context-menu-item${disabled}" data-action="${item.action || ''}">
+                    ${item.icon ? `<span class="icon">${item.icon}</span>` : ''}
+                    ${item.label}
+                    ${item.arrow ? '<span class="arrow">▶</span>' : ''}
+                </div>`;
+            }).join('');
+
+            menu.style.left = x + 'px';
+            menu.style.top = y + 'px';
+            menu.classList.add('active');
+
+            menu.querySelectorAll('.context-menu-item:not(.disabled)').forEach(item => {
+                item.addEventListener('click', () => {
+                    const action = item.dataset.action;
+                    if (action) handleContextMenuAction(action);
+                    hideContextMenu();
+                });
+            });
+        }
+
+        function hideContextMenu() {
+            document.getElementById('contextMenu').classList.remove('active');
+            contextMenuTarget = null;
+        }
+
+        function handleContextMenuAction(action) {
+            if (action === 'open' && contextMenuTarget) {
+                const iconEl = contextMenuTarget;
+                const appId = iconEl.dataset.app;
+                const config = desktopIconsConfig.find(c => c.id === appId);
+
+                // Validate file extension before opening
+                if (config && config.fileType) {
+                    const label = iconEl.querySelector('.icon-label').textContent;
+                    const extension = label.includes('.') ? label.split('.').pop().toLowerCase() : '';
+
+                    if (config.fileType === 'txt' && extension && extension !== 'txt') {
+                        alert(`Cannot open ${label}.\n\nThe file type is not supported.`);
+                        return;
+                    }
+                    if (config.fileType === 'folder' && extension) {
+                        alert(`Cannot open ${label}.\n\nThe file is not a valid folder.`);
+                        return;
+                    }
+                }
+
+                openWindow(appId);
+            } else if (action === 'rename' && contextMenuTarget) {
+                renameIcon(contextMenuTarget);
+            } else if (action === 'delete' && contextMenuTarget) {
+                const iconEl = contextMenuTarget;
+                const label = iconEl.querySelector('.icon-label').textContent;
+                if (confirm(`Are you sure you want to send '${label}' to the Recycle Bin?`)) {
+                    iconEl.remove();
+                }
+            } else if (action === 'refresh') {
+                // Just close menu - visual refresh effect
+            }
+        }
+
+        function renameIcon(iconEl) {
+            const labelEl = iconEl.querySelector('.icon-label');
+            const oldName = labelEl.textContent;
+            const appId = iconEl.dataset.app;
+            const config = desktopIconsConfig.find(c => c.id === appId);
+
+            if (!config || !config.renameable) {
+                alert('Cannot rename this item.');
+                return;
+            }
+
+            const newName = prompt('Enter a new name:', oldName);
+            if (newName && newName !== oldName) {
+                // Extract old and new extensions
+                const oldExt = oldName.includes('.') ? oldName.split('.').pop().toLowerCase() : '';
+                const newExt = newName.includes('.') ? newName.split('.').pop().toLowerCase() : '';
+
+                // If original had no extension, add the correct one
+                let finalName = newName;
+                if (!newExt && config.fileType !== 'folder') {
+                    finalName = `${newName}.${config.fileType}`;
+                    alert(`If you change a filename extension, the file might become unusable.\n\nThe name has been set to: ${finalName}`);
+                }
+                // If extension changed, warn
+                else if (oldExt && newExt && oldExt !== newExt) {
+                    if (!confirm(`If you change a filename extension, the file might become unusable.\n\nAre you sure you want to change it?`)) {
+                        return;
+                    }
+                    // Update file type if extension changed
+                    config.fileType = newExt;
+                }
+
+                labelEl.textContent = finalName;
+            }
+        }
+
+        // =====================
         // EVENTS
         // =====================
 
@@ -1409,7 +1624,49 @@
 
             const desktop = document.getElementById('desktop');
             desktop.addEventListener('click', (e) => {
-                if (e.target.id === 'desktop' || e.target.id === 'desktopIcons') { closeStartMenu(); selectIcon(null); }
+                if (e.target.id === 'desktop' || e.target.id === 'desktopIcons') { closeStartMenu(); selectIcon(null); hideContextMenu(); }
+            });
+
+            // Desktop right-click context menu
+            desktop.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                hideContextMenu();
+
+                if (e.target.id === 'desktop' || e.target.id === 'desktopIcons') {
+                    // Desktop context menu
+                    showContextMenu(e.clientX, e.clientY, [
+                        { label: 'Arrange Icons', arrow: true, disabled: true },
+                        { divider: true },
+                        { label: 'Line up Icons', disabled: true },
+                        { label: 'Refresh', action: 'refresh' },
+                        { divider: true },
+                        { label: 'Paste', disabled: true },
+                        { label: 'Paste Shortcut', disabled: true },
+                        { divider: true },
+                        { label: 'New', arrow: true, disabled: true },
+                        { divider: true },
+                        { label: 'Properties', disabled: true },
+                    ]);
+                } else if (e.target.closest('.icon')) {
+                    // Icon context menu
+                    const iconEl = e.target.closest('.icon');
+                    contextMenuTarget = iconEl;
+                    const appId = iconEl.dataset.app;
+                    const config = desktopIconsConfig.find(c => c.id === appId);
+
+                    showContextMenu(e.clientX, e.clientY, [
+                        { label: 'Open', action: 'open' },
+                        { divider: true },
+                        { label: 'Cut', disabled: true },
+                        { label: 'Copy', disabled: true },
+                        { divider: true },
+                        { label: 'Create Shortcut', disabled: true },
+                        { label: 'Delete', action: 'delete' },
+                        { label: 'Rename', action: 'rename', disabled: !config?.renameable },
+                        { divider: true },
+                        { label: 'Properties', disabled: true },
+                    ]);
+                }
             });
 
             // Desktop selection rectangle
