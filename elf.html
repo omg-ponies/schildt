@@ -3,8 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎄 Elf Access 🎄</title>
+    <title>🧝 Elf Health Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
     <style>
+        :root {
+            --accent: #0066cc;
+            --accent-light: #4d94ff;
+            --bg: #ffffff;
+            --text: #000000;
+            --text-muted: #666666;
+            --border: #e0e0e0;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.3);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -12,239 +27,1677 @@
         }
 
         body {
-            font-family: 'Courier New', monospace;
-            background: linear-gradient(135deg, #1a472a 0%, #2d5a3d 50%, #1a472a 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+            color: var(--text);
+            overflow-x: hidden;
+        }
+
+        /* Login Screen */
+        #login-container {
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #fff;
-            overflow: hidden;
+            min-height: 100vh;
+            padding: 20px;
         }
 
-        .snowflake {
-            position: fixed;
-            top: -10px;
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 1em;
-            user-select: none;
-            pointer-events: none;
-            animation: fall linear infinite;
-        }
-
-        @keyframes fall {
-            to {
-                transform: translateY(100vh);
-            }
-        }
-
-        #login-container {
-            background: rgba(0, 0, 0, 0.7);
-            border: 3px solid #c41e3a;
-            border-radius: 10px;
-            padding: 40px;
-            text-align: center;
-            box-shadow: 0 0 30px rgba(196, 30, 58, 0.5);
-            max-width: 400px;
-            width: 90%;
-        }
-
-        #content-container {
-            display: none;
+        .login-box {
             background: rgba(0, 0, 0, 0.8);
-            border: 3px solid #0f8a5f;
-            border-radius: 10px;
-            padding: 40px;
-            max-width: 800px;
-            width: 90%;
-            box-shadow: 0 0 30px rgba(15, 138, 95, 0.5);
+            border: 3px solid var(--accent);
+            border-radius: 16px;
+            padding: 48px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            max-width: 420px;
+            width: 100%;
         }
 
-        h1 {
+        .login-box h1 {
+            color: #fff;
             font-size: 2.5em;
-            margin-bottom: 20px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            margin-bottom: 24px;
         }
 
-        .elf-icon {
-            font-size: 4em;
-            margin-bottom: 20px;
-            animation: bounce 2s ease-in-out infinite;
+        .login-box .elf-icon {
+            font-size: 5em;
+            margin-bottom: 24px;
+            animation: float 3s ease-in-out infinite;
         }
 
-        @keyframes bounce {
+        @keyframes float {
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-20px); }
         }
 
-        input[type="password"] {
+        .login-box input {
             width: 100%;
-            padding: 15px;
+            padding: 16px;
             margin: 20px 0;
-            border: 2px solid #c41e3a;
-            border-radius: 5px;
-            font-family: 'Courier New', monospace;
+            border: 2px solid var(--accent);
+            border-radius: 8px;
             font-size: 1.1em;
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.95);
         }
 
-        button {
+        .login-box button {
             width: 100%;
-            padding: 15px;
-            background: #c41e3a;
+            padding: 16px;
+            background: var(--accent);
             color: white;
             border: none;
-            border-radius: 5px;
-            font-family: 'Courier New', monospace;
-            font-size: 1.1em;
+            border-radius: 8px;
+            font-size: 1.2em;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.3s;
         }
 
-        button:hover {
-            background: #a01729;
-            transform: scale(1.05);
+        .login-box button:hover {
+            background: var(--accent-light);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 102, 204, 0.4);
         }
 
-        .error {
-            color: #ff6b6b;
-            margin-top: 15px;
-            font-weight: bold;
+        .error-message {
+            color: var(--danger);
+            margin-top: 16px;
+            font-weight: 600;
             display: none;
         }
 
-        .message {
-            font-size: 1.2em;
-            line-height: 1.8;
-            text-align: left;
-            margin: 20px 0;
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-12px); }
+            75% { transform: translateX(12px); }
         }
 
-        .signature {
-            text-align: right;
-            font-style: italic;
-            margin-top: 30px;
-            color: #0f8a5f;
+        /* Main Dashboard */
+        #dashboard-container {
+            display: none;
+            min-height: 100vh;
+            background: #f5f7fa;
+        }
+
+        .dashboard-header {
+            background: var(--bg);
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .patient-info h1 {
+            font-size: 1.8em;
+            margin-bottom: 4px;
+        }
+
+        .patient-info p {
+            color: var(--text-muted);
+            font-size: 0.95em;
         }
 
         .logout-btn {
-            background: #555;
-            margin-top: 20px;
+            padding: 10px 24px;
+            background: var(--text-muted);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.95em;
+            transition: all 0.3s;
         }
 
         .logout-btn:hover {
-            background: #333;
+            background: var(--text);
+        }
+
+        /* Tab Navigation */
+        .tab-navigation {
+            background: var(--bg);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 96px;
+            z-index: 99;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .tabs {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .tab {
+            padding: 16px 24px;
+            background: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 0.95em;
+            font-weight: 500;
+            color: var(--text-muted);
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .tab:hover {
+            color: var(--accent);
+            background: rgba(0, 102, 204, 0.05);
+        }
+
+        .tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+            font-weight: 600;
+        }
+
+        /* Dashboard Content */
+        .dashboard-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 32px 24px;
+        }
+
+        .dashboard-panel {
+            display: none;
+            animation: fadeIn 0.4s ease-in-out;
+        }
+
+        .dashboard-panel.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Executive Dashboard */
+        .health-summary {
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+            color: white;
+            padding: 32px;
+            border-radius: 16px;
+            margin-bottom: 32px;
+            box-shadow: 0 8px 24px rgba(0, 102, 204, 0.3);
+        }
+
+        .health-summary h2 {
+            font-size: 2em;
+            margin-bottom: 8px;
+        }
+
+        .health-summary p {
+            opacity: 0.95;
+            font-size: 1.1em;
+        }
+
+        .health-score {
+            display: inline-block;
+            margin-top: 16px;
+            padding: 12px 24px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            font-size: 1.3em;
+            font-weight: 600;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .metric-card {
+            background: var(--bg);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .metric-card.pulse::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at center, rgba(239, 68, 68, 0.1) 0%, transparent 70%);
+            animation: heartbeat 1.2s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes heartbeat {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+        }
+
+        .metric-card h3 {
+            font-size: 1.1em;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .metric-card .icon {
+            font-size: 1.5em;
+        }
+
+        .metric-value {
+            font-size: 2.5em;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 8px;
+        }
+
+        .metric-label {
+            color: var(--text-muted);
+            font-size: 0.9em;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-top: 12px;
+            animation: breathe 3s ease-in-out infinite;
+        }
+
+        .status-badge.normal {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+
+        .status-badge.abnormal {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        @keyframes breathe {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 1; }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(0.95); }
+        }
+
+        .metric-details {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-in-out;
+        }
+
+        .metric-card.expanded .metric-details {
+            max-height: 500px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .biomarker-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 0.9em;
+        }
+
+        .biomarker-name {
+            color: var(--text);
+        }
+
+        .biomarker-value {
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        /* MRI Section */
+        .mri-section {
+            background: var(--bg);
+            border-radius: 12px;
+            padding: 32px;
+            margin-top: 32px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .mri-section h2 {
+            margin-bottom: 24px;
+            font-size: 1.6em;
+        }
+
+        .mri-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .mri-image {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.3s;
+            background: #000;
+        }
+
+        .mri-image:hover {
+            transform: scale(1.05);
+        }
+
+        .mri-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .mri-label {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px;
+            font-size: 0.85em;
+            text-align: center;
+        }
+
+        /* Data Analyst Dashboard */
+        .chart-container {
+            background: var(--bg);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-container h3 {
+            margin-bottom: 20px;
+            font-size: 1.3em;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 400px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .controls button {
+            padding: 8px 16px;
+            background: var(--bg);
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .controls button:hover,
+        .controls button.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        /* Medical Professional Dashboard */
+        .medical-header {
+            background: var(--bg);
+            padding: 24px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .lab-report {
+            background: var(--bg);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow-x: auto;
+        }
+
+        .lab-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+        }
+
+        .lab-table thead {
+            background: #f8f9fa;
+            position: sticky;
+            top: 0;
+        }
+
+        .lab-table th {
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .lab-table td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .lab-table tbody tr:hover {
+            background: rgba(0, 102, 204, 0.05);
+        }
+
+        .category-header {
+            background: #f0f4f8 !important;
+            font-weight: 600;
+        }
+
+        /* Visual Infographic Dashboard */
+        .infographic-container {
+            text-align: center;
+        }
+
+        .health-score-gauge {
+            margin: 40px auto;
+            max-width: 400px;
+        }
+
+        .gauge {
+            width: 300px;
+            height: 300px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .gauge-circle {
+            transform: rotate(-90deg);
+        }
+
+        .gauge-bg {
+            fill: none;
+            stroke: #e0e0e0;
+            stroke-width: 20;
+        }
+
+        .gauge-fill {
+            fill: none;
+            stroke: var(--success);
+            stroke-width: 20;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 2s ease-in-out;
+        }
+
+        .gauge-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3em;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .systems-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 24px;
+            margin: 40px 0;
+        }
+
+        .system-card {
+            background: var(--bg);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .system-icon {
+            font-size: 4em;
+            margin-bottom: 16px;
+        }
+
+        .progress-ring {
+            width: 120px;
+            height: 120px;
+            margin: 20px auto;
+        }
+
+        .progress-ring-circle {
+            transition: stroke-dashoffset 1s ease-in-out;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+
+        /* Gaming/Futuristic Dashboard */
+        .gaming-dashboard {
+            background: #0a0e27;
+            min-height: 100vh;
+            padding: 32px 24px;
+            position: relative;
+            color: #00ff9d;
+        }
+
+        .scan-line {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00ff9d, transparent);
+            animation: scan 4s linear infinite;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        @keyframes scan {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(100vh); }
+        }
+
+        .gaming-header {
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .gaming-header h1 {
+            font-size: 2.5em;
+            color: #00ff9d;
+            text-shadow: 0 0 20px rgba(0, 255, 157, 0.5);
+            font-family: 'Courier New', monospace;
+            margin-bottom: 8px;
+        }
+
+        .gaming-header .status {
+            color: #00d4ff;
+            font-family: 'Courier New', monospace;
+        }
+
+        .hex-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .hex-panel {
+            background: rgba(0, 20, 50, 0.8);
+            border: 2px solid #00ff9d;
+            border-radius: 8px;
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+            box-shadow: 0 0 20px rgba(0, 255, 157, 0.2);
+        }
+
+        .hex-panel::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #00ff9d, #00d4ff, #00ff9d);
+            border-radius: 8px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: -1;
+            animation: borderGlow 3s ease-in-out infinite;
+        }
+
+        @keyframes borderGlow {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.6; }
+        }
+
+        .hex-panel:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 0 40px rgba(0, 255, 157, 0.4);
+        }
+
+        .hex-panel h3 {
+            color: #00d4ff;
+            font-family: 'Courier New', monospace;
+            margin-bottom: 16px;
+            font-size: 1.1em;
+        }
+
+        .stat-bar {
+            background: rgba(0, 0, 0, 0.5);
+            height: 24px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 12px 0;
+            position: relative;
+        }
+
+        .stat-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff9d, #00d4ff);
+            transition: width 1s ease-in-out;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 8px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+
+        .glitch {
+            position: relative;
+        }
+
+        .glitch::before,
+        .glitch::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            opacity: 0.8;
+        }
+
+        .glitch::before {
+            animation: glitch 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+            color: #00d4ff;
+            z-index: -1;
+        }
+
+        .glitch::after {
+            animation: glitch 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) reverse infinite;
+            color: #ff00ff;
+            z-index: -2;
+        }
+
+        @keyframes glitch {
+            0% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(-2px, -2px); }
+            60% { transform: translate(2px, 2px); }
+            80% { transform: translate(2px, -2px); }
+            100% { transform: translate(0); }
+        }
+
+        /* Lightbox */
+        .lightbox {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        .lightbox.active {
+            display: flex;
+        }
+
+        .lightbox-content {
+            max-width: 90%;
+            max-height: 90%;
+            position: relative;
+        }
+
+        .lightbox-content img {
+            max-width: 100%;
+            max-height: 80vh;
+            object-fit: contain;
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: -40px;
+            right: 0;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 2em;
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        .lightbox-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            font-size: 2em;
+            cursor: pointer;
+            padding: 16px 20px;
+            border-radius: 4px;
+            transition: background 0.3s;
+        }
+
+        .lightbox-nav:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .lightbox-prev {
+            left: 20px;
+        }
+
+        .lightbox-next {
+            right: 20px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .tab {
+                font-size: 0.85em;
+                padding: 12px 16px;
+            }
+
+            .dashboard-content {
+                padding: 20px 16px;
+            }
+
+            .health-summary {
+                padding: 24px;
+            }
+
+            .health-summary h2 {
+                font-size: 1.5em;
+            }
+        }
+
+        /* Print Styles */
+        @media print {
+            .dashboard-header,
+            .tab-navigation,
+            .logout-btn {
+                display: none !important;
+            }
+
+            .dashboard-panel {
+                display: block !important;
+                page-break-after: always;
+            }
+
+            body {
+                background: white;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- Snowflakes -->
-    <div id="snowflakes"></div>
-
-    <!-- Login Form -->
+    <!-- Login Container -->
     <div id="login-container">
-        <div class="elf-icon">🧝</div>
-        <h1>Elf Access Portal</h1>
-        <p>Enter the secret code to proceed</p>
-        <input type="password" id="password" placeholder="Enter password..." />
-        <button onclick="checkPassword()">Enter</button>
-        <div class="error" id="error">❌ Incorrect password. Try again!</div>
+        <div class="login-box">
+            <div class="elf-icon">🧝</div>
+            <h1>Elf Health Portal</h1>
+            <p style="color: #ccc; margin-bottom: 20px;">Enter access code to view health dashboard</p>
+            <input type="password" id="password" placeholder="Enter password..." />
+            <button onclick="checkPassword()">Access Dashboard</button>
+            <div class="error-message" id="error">❌ Incorrect password. Try again!</div>
+        </div>
     </div>
 
-    <!-- Protected Content -->
-    <div id="content-container">
-        <h1>🎄 Welcome, Friend! 🎄</h1>
-        <div class="message">
-            <p>🧝 You've found the secret elf page!</p>
-            <p>This is a password-protected area. You can customize this content to display whatever you'd like.</p>
-            <p>The snow is falling outside, the fire is warm, and all is well in the workshop.</p>
-            <p>May your days be merry and bright! ✨</p>
+    <!-- Dashboard Container -->
+    <div id="dashboard-container">
+        <!-- Header -->
+        <div class="dashboard-header">
+            <div class="header-content">
+                <div class="patient-info">
+                    <h1>Health Dashboard - Johannes Henrik</h1>
+                    <p>Report Date: January 12, 2026 | Full Body MRI & Lab Results</p>
+                </div>
+                <button class="logout-btn" onclick="logout()">Logout</button>
+            </div>
         </div>
-        <div class="signature">
-            — The Elves 🎅
+
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab(0)">Executive</button>
+                <button class="tab" onclick="switchTab(1)">Data Analyst</button>
+                <button class="tab" onclick="switchTab(2)">Medical Professional</button>
+                <button class="tab" onclick="switchTab(3)">Visual Infographic</button>
+                <button class="tab" onclick="switchTab(4)">Gaming/Futuristic</button>
+            </div>
         </div>
-        <button class="logout-btn" onclick="logout()">Logout</button>
+
+        <!-- Dashboard Content -->
+        <div class="dashboard-content">
+            <!-- Dashboard 1: Executive Clean -->
+            <div class="dashboard-panel active" id="dashboard-1">
+                <div class="health-summary">
+                    <h2>Overall Health Status</h2>
+                    <p>Your comprehensive health screening shows excellent results across all major biomarkers.</p>
+                    <div class="health-score">Health Score: <span id="health-score-exec">100</span>/100</div>
+                </div>
+
+                <div class="metrics-grid" id="metrics-grid">
+                    <!-- Cards will be populated by JavaScript -->
+                </div>
+
+                <div class="mri-section">
+                    <h2>MRI Imaging Results</h2>
+                    <p style="color: var(--text-muted); margin-bottom: 24px;">Full body MRI scan completed on March 15, 2025</p>
+                    <div class="mri-grid" id="mri-grid-exec">
+                        <!-- MRI images will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard 2: Data Analyst -->
+            <div class="dashboard-panel" id="dashboard-2">
+                <div class="chart-container">
+                    <h3>Biomarker Overview by Category</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <h3>Historical Trends</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <h3>System Health Radar</h3>
+                    <div class="chart-wrapper" style="height: 500px;">
+                        <canvas id="radarChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <h3>All Biomarkers - Detailed Data</h3>
+                    <div class="controls">
+                        <input type="text" id="search-biomarker" placeholder="Search biomarkers..." style="padding: 8px 16px; border: 2px solid var(--border); border-radius: 6px; flex: 1; max-width: 300px;">
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table class="lab-table" id="analyst-table">
+                            <thead>
+                                <tr>
+                                    <th>Biomarker</th>
+                                    <th>Value</th>
+                                    <th>Unit</th>
+                                    <th>Reference Range</th>
+                                    <th>Status</th>
+                                    <th>Trend</th>
+                                </tr>
+                            </thead>
+                            <tbody id="analyst-table-body">
+                                <!-- Table rows populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard 3: Medical Professional -->
+            <div class="dashboard-panel" id="dashboard-3">
+                <div class="medical-header">
+                    <h2>Laboratory Report</h2>
+                    <p style="color: var(--text-muted); margin-top: 8px;">Patient: Johannes Henrik | DOB: [Patient DOB] | Report Date: January 12, 2026</p>
+                    <button onclick="window.print()" style="margin-top: 16px; padding: 10px 20px; background: var(--accent); color: white; border: none; border-radius: 6px; cursor: pointer;">Print Report</button>
+                </div>
+
+                <div class="lab-report">
+                    <table class="lab-table">
+                        <thead>
+                            <tr>
+                                <th>Category / Biomarker</th>
+                                <th>Result</th>
+                                <th>Unit</th>
+                                <th>Reference Range</th>
+                                <th>Status</th>
+                                <th>Previous (May 2021)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="medical-table-body">
+                            <!-- Table rows populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mri-section" style="margin-top: 32px;">
+                    <h2>Medical Imaging - MRI Report</h2>
+                    <div style="background: #fffbeb; border-left: 4px solid var(--warning); padding: 16px; margin: 16px 0; border-radius: 4px;">
+                        <p><strong>⚠️ Finding:</strong> Brain MRI shows anomaly (Avvikelse) - Review with physician recommended</p>
+                    </div>
+                    <table class="lab-table" style="margin-bottom: 24px;">
+                        <thead>
+                            <tr>
+                                <th>Body Region</th>
+                                <th>Scan Type</th>
+                                <th>Finding</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Brain</td>
+                                <td>MRI Angiography</td>
+                                <td>Anomaly Detected</td>
+                                <td><span class="status-badge abnormal">Review Required</span></td>
+                            </tr>
+                            <tr>
+                                <td>Neck</td>
+                                <td>MRI</td>
+                                <td>Normal</td>
+                                <td><span class="status-badge normal">Normal</span></td>
+                            </tr>
+                            <tr>
+                                <td>Thorax/Chest</td>
+                                <td>MRI</td>
+                                <td>Normal</td>
+                                <td><span class="status-badge normal">Normal</span></td>
+                            </tr>
+                            <tr>
+                                <td>Spine</td>
+                                <td>MRI</td>
+                                <td>Normal</td>
+                                <td><span class="status-badge normal">Normal</span></td>
+                            </tr>
+                            <tr>
+                                <td>Abdomen</td>
+                                <td>MRI</td>
+                                <td>Normal</td>
+                                <td><span class="status-badge normal">Normal</span></td>
+                            </tr>
+                            <tr>
+                                <td>Pelvis</td>
+                                <td>MRI</td>
+                                <td>Normal</td>
+                                <td><span class="status-badge normal">Normal</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="mri-grid" id="mri-grid-medical">
+                        <!-- MRI images populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard 4: Visual Infographic -->
+            <div class="dashboard-panel" id="dashboard-4">
+                <div class="infographic-container">
+                    <h1 style="font-size: 2.5em; margin-bottom: 16px;">Your Health Journey</h1>
+                    <p style="font-size: 1.2em; color: var(--text-muted); margin-bottom: 40px;">A visual story of your wellness</p>
+
+                    <div class="health-score-gauge">
+                        <h2 style="margin-bottom: 24px;">Overall Wellness Score</h2>
+                        <div class="gauge">
+                            <svg class="gauge-circle" viewBox="0 0 200 200">
+                                <circle class="gauge-bg" cx="100" cy="100" r="90"></circle>
+                                <circle class="gauge-fill" cx="100" cy="100" r="90"
+                                    stroke-dasharray="565.48"
+                                    stroke-dashoffset="56.55"
+                                    id="gauge-fill"></circle>
+                            </svg>
+                            <div class="gauge-text"><span id="health-score-visual">97</span></div>
+                        </div>
+                        <p style="margin-top: 16px; font-size: 1.1em; color: var(--success);">✨ Excellent Health Status</p>
+                    </div>
+
+                    <div class="systems-grid" id="systems-grid">
+                        <!-- System cards populated by JavaScript -->
+                    </div>
+
+                    <div style="margin: 60px auto; max-width: 600px; text-align: left; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px; border-radius: 16px;">
+                        <h2 style="color: white; margin-bottom: 20px;">💡 Health Insights</h2>
+                        <div style="line-height: 1.8;">
+                            <p>💚 <strong>Cardiovascular System:</strong> Your heart is pumping strong! All lipid markers are in optimal range.</p>
+                            <p style="margin-top: 12px;">🔬 <strong>Metabolic Health:</strong> Blood sugar control is excellent with HbA1c at 29 mmol/mol.</p>
+                            <p style="margin-top: 12px;">🧠 <strong>Brain Health:</strong> MRI detected an anomaly - follow up with your physician for detailed evaluation.</p>
+                            <p style="margin-top: 12px;">💪 <strong>Overall:</strong> 34/34 biomarkers tested - maintaining healthy lifestyle habits!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard 5: Gaming/Futuristic -->
+            <div class="dashboard-panel" id="dashboard-5">
+                <div class="gaming-dashboard">
+                    <div class="scan-line"></div>
+
+                    <div class="gaming-header">
+                        <h1 class="glitch" data-text="BIOSCAN COMPLETE">BIOSCAN COMPLETE</h1>
+                        <p class="status">[ SYSTEM STATUS: ALL NOMINAL ]</p>
+                        <p class="status" style="margin-top: 8px;">SCAN DATE: 2026-01-12 | SUBJECT: JOHANNES HENRIK</p>
+                    </div>
+
+                    <div class="hex-grid" id="gaming-grid">
+                        <!-- Gaming panels populated by JavaScript -->
+                    </div>
+
+                    <div style="margin-top: 40px; text-align: center;">
+                        <h2 style="color: #00d4ff; font-family: 'Courier New', monospace; margin-bottom: 24px;">[ MEDICAL IMAGING SCANS ]</h2>
+                        <div class="mri-grid" id="mri-grid-gaming" style="filter: hue-rotate(180deg) saturate(1.5);">
+                            <!-- MRI images populated by JavaScript with holographic effect -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lightbox for MRI Images -->
+    <div class="lightbox" id="lightbox">
+        <div class="lightbox-content">
+            <button class="lightbox-close" onclick="closeLightbox()">×</button>
+            <button class="lightbox-nav lightbox-prev" onclick="navigateLightbox(-1)">‹</button>
+            <img id="lightbox-image" src="" alt="MRI Image">
+            <button class="lightbox-nav lightbox-next" onclick="navigateLightbox(1)">›</button>
+            <p id="lightbox-caption" style="color: white; text-align: center; margin-top: 16px;"></p>
+        </div>
     </div>
 
     <script>
-        // Password configuration - change this to your desired password
+        // Password
         const CORRECT_PASSWORD = 'elf2026';
 
-        // Create snowflakes
-        function createSnowflakes() {
-            const snowflakesContainer = document.getElementById('snowflakes');
-            for (let i = 0; i < 50; i++) {
-                const snowflake = document.createElement('div');
-                snowflake.className = 'snowflake';
-                snowflake.textContent = '❄';
-                snowflake.style.left = Math.random() * 100 + '%';
-                snowflake.style.animationDuration = (Math.random() * 3 + 2) + 's';
-                snowflake.style.animationDelay = Math.random() * 5 + 's';
-                snowflake.style.opacity = Math.random();
-                snowflakesContainer.appendChild(snowflake);
+        // Health Data Structure
+        const healthData = {
+            patient: {
+                name: 'Johannes Henrik',
+                reportDate: '2026-01-12',
+                mriDate: '2025-03-15'
+            },
+            biomarkers: {
+                bloodSugar: [
+                    { name: 'HbA1c', value: 29, unit: 'mmol/mol', refMin: 20, refMax: 42, status: 'Normal', prev: 28 },
+                    { name: 'Glucose', value: 5.3, unit: 'mmol/L', refMin: 4.0, refMax: 6.0, status: 'Normal', prev: 5.1 }
+                ],
+                bloodIron: [
+                    { name: 'Erc-MCH', value: 31, unit: 'pg', refMin: 27, refMax: 33, status: 'Normal', prev: 30 },
+                    { name: 'Erc-MCV', value: 96, unit: 'fL', refMin: 82, refMax: 98, status: 'Normal', prev: 95 },
+                    { name: 'Erytrocyter', value: 4.4, unit: '10×10¹²/L', refMin: 4.0, refMax: 5.2, status: 'Normal', prev: 4.5 },
+                    { name: 'EVF', value: 0.43, unit: '-', refMin: 0.39, refMax: 0.50, status: 'Normal', prev: 0.44 },
+                    { name: 'Hemoglobin', value: 138, unit: 'g/L', refMin: 130, refMax: 170, status: 'Normal', prev: 140 },
+                    { name: 'Leukocyter', value: 7.2, unit: '10×10⁹/L', refMin: 3.5, refMax: 8.8, status: 'Normal', prev: 7.0 },
+                    { name: 'Trombocyter', value: 209, unit: '10×10⁹/L', refMin: 145, refMax: 348, status: 'Normal', prev: 215 },
+                    { name: 'Ferritin', value: 90, unit: 'μg/L', refMin: 30, refMax: 400, status: 'Normal', prev: 85 },
+                    { name: 'Iron', value: 23, unit: 'μmol/L', refMin: 9, refMax: 34, status: 'Normal', prev: 22 },
+                    { name: 'Homocystein', value: 9.3, unit: 'μmol/L', refMin: 5, refMax: 15, status: 'Normal', prev: 9.5 }
+                ],
+                thyroid: [
+                    { name: 'Free T4', value: 12, unit: 'pmol/L', refMin: 10, refMax: 22, status: 'Normal', prev: 11 },
+                    { name: 'TSH', value: 1.1, unit: 'mE/L', refMin: 0.4, refMax: 4.0, status: 'Normal', prev: 1.2 }
+                ],
+                liver: [
+                    { name: 'ALAT', value: 0.60, unit: 'µkat/L', refMin: 0.15, refMax: 1.1, status: 'Normal', prev: 0.58 },
+                    { name: 'ASAT', value: 0.52, unit: 'µkat/L', refMin: 0.25, refMax: 0.75, status: 'Normal', prev: 0.50 }
+                ],
+                inflammation: [
+                    { name: 'CRP', value: 0.60, unit: 'mg/L', refMin: 0, refMax: 3.0, status: 'Normal', prev: 0.55 }
+                ],
+                kidneys: [
+                    { name: 'Kreatinin', value: 88, unit: 'µmol/L', refMin: 60, refMax: 105, status: 'Normal', prev: 90 },
+                    { name: 'eGFR', value: 86.0, unit: 'mL/min', refMin: 60, refMax: 120, status: 'Normal', prev: 85 }
+                ],
+                heart: [
+                    { name: 'Triglycerider', value: 0.77, unit: 'mmol/L', refMin: 0.45, refMax: 2.6, status: 'Normal', prev: 0.80 },
+                    { name: 'Apo B/Apo A1 ratio', value: 0.52, unit: '-', refMin: 0.3, refMax: 0.9, status: 'Normal', prev: 0.50 },
+                    { name: 'Apolipoprotein A1', value: 1.7, unit: 'g/L', refMin: 1.2, refMax: 2.0, status: 'Normal', prev: 1.65 },
+                    { name: 'Apolipoprotein B', value: 0.87, unit: 'g/L', refMin: 0.6, refMax: 1.3, status: 'Normal', prev: 0.85 },
+                    { name: 'HDL Cholesterol', value: 1.8, unit: 'mmol/L', refMin: 1.0, refMax: 3.0, status: 'Normal', prev: 1.75 },
+                    { name: 'LDL Cholesterol', value: 3.2, unit: 'mmol/L', refMin: 1.2, refMax: 4.9, status: 'Normal', prev: 3.3 },
+                    { name: 'Total Cholesterol', value: 5.3, unit: 'mmol/L', refMin: 3.6, refMax: 6.7, status: 'Normal', prev: 5.4 }
+                ],
+                vitamins: [
+                    { name: 'Vitamin D (25-OH)', value: 62, unit: 'nmol/L', refMin: 50, refMax: 150, status: 'Normal', prev: 58 },
+                    { name: 'Folat', value: 28, unit: 'nmol/L', refMin: 10, refMax: 42, status: 'Normal', prev: 26 },
+                    { name: 'Vitamin B12', value: 290, unit: 'pmol/L', refMin: 150, refMax: 600, status: 'Normal', prev: 280 },
+                    { name: 'Magnesium', value: 0.94, unit: 'mmol/L', refMin: 0.71, refMax: 0.94, status: 'Normal', prev: 0.92 },
+                    { name: 'Potassium', value: 4.6, unit: 'mmol/L', refMin: 3.6, refMax: 4.6, status: 'Normal', prev: 4.5 },
+                    { name: 'Calcium', value: 2.40, unit: 'mmol/L', refMin: 2.15, refMax: 2.51, status: 'Normal', prev: 2.38 },
+                    { name: 'Sodium', value: 138, unit: 'mmol/L', refMin: 137, refMax: 145, status: 'Normal', prev: 139 }
+                ],
+                hormones: [
+                    { name: 'Testosterone', value: 18.5, unit: 'nmol/L', refMin: 8.6, refMax: 29.0, status: 'Normal', prev: 18.0 }
+                ]
+            },
+            mri: {
+                brain: { status: 'Anomaly', description: 'Anomaly detected - physician review recommended' },
+                neck: { status: 'Normal', description: 'No abnormalities detected' },
+                chest: { status: 'Normal', description: 'No abnormalities detected' },
+                spine: { status: 'Normal', description: 'No abnormalities detected' },
+                abdomen: { status: 'Normal', description: 'No abnormalities detected' },
+                pelvis: { status: 'Normal', description: 'No abnormalities detected' }
+            }
+        };
+
+        // MRI Images (Base64 placeholders - replace with actual base64 data)
+        const mriImages = [
+            {
+                id: 'brain',
+                label: 'Brain Angiography',
+                src: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iIzAwMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IiNmZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5CcmFpbiBNUkk8L3RleHQ+PHRleHQgeD0iNTAlIiB5PSI2MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iI2ZmMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkFub21hbHk8L3RleHQ+PC9zdmc+',
+                status: 'Anomaly'
+            },
+            {
+                id: 'abdomen',
+                label: 'Abdomen',
+                src: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iIzAwMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IiNmZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5BYmRvbWVuIE1SSTwvdGV4dD48dGV4dCB4PSI1MCUiIHk9IjYwJSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSIjMGYwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+Tm9ybWFsPC90ZXh0Pjwvc3ZnPg==',
+                status: 'Normal'
+            },
+            {
+                id: 'spine',
+                label: 'Spine',
+                src: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iIzAwMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IiNmZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5TcGluZSBNUkk8L3RleHQ+PHRleHQgeD0iNTAlIiB5PSI2MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzBmMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vcm1hbDwvdGV4dD48L3N2Zz4=',
+                status: 'Normal'
+            },
+            {
+                id: 'neck',
+                label: 'Neck',
+                src: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iIzAwMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IiNmZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5OZWNrIE1SSTwvdGV4dD48dGV4dCB4PSI1MCUiIHk9IjYwJSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSIjMGYwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+Tm9ybWFsPC90ZXh0Pjwvc3ZnPg==',
+                status: 'Normal'
+            },
+            {
+                id: 'chest',
+                label: 'Chest/Thorax',
+                src: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iIzAwMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IiNmZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5DaGVzdCBNUkk8L3RleHQ+PHRleHQgeD0iNTAlIiB5PSI2MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzBmMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vcm1hbDwvdGV4dD48L3N2Zz4=',
+                status: 'Normal'
+            }
+        ];
+
+        let currentLightboxIndex = 0;
+
+        // Authentication
+        function checkPassword() {
+            const input = document.getElementById('password');
+            const error = document.getElementById('error');
+
+            if (input.value === CORRECT_PASSWORD) {
+                sessionStorage.setItem('elfAccess', 'granted');
+                showDashboard();
+            } else {
+                error.style.display = 'block';
+                input.value = '';
+                document.querySelector('.login-box').style.animation = 'shake 0.5s';
+                setTimeout(() => {
+                    document.querySelector('.login-box').style.animation = '';
+                    error.style.display = 'none';
+                }, 1500);
             }
         }
 
-        createSnowflakes();
+        function showDashboard() {
+            document.getElementById('login-container').style.display = 'none';
+            document.getElementById('dashboard-container').style.display = 'block';
+            initializeDashboards();
+        }
+
+        function logout() {
+            sessionStorage.removeItem('elfAccess');
+            location.reload();
+        }
 
         // Check if already logged in
         if (sessionStorage.getItem('elfAccess') === 'granted') {
-            showContent();
-        }
-
-        // Password check
-        function checkPassword() {
-            const passwordInput = document.getElementById('password');
-            const errorDiv = document.getElementById('error');
-
-            if (passwordInput.value === CORRECT_PASSWORD) {
-                sessionStorage.setItem('elfAccess', 'granted');
-                showContent();
-            } else {
-                errorDiv.style.display = 'block';
-                passwordInput.value = '';
-                passwordInput.focus();
-
-                // Shake animation
-                document.getElementById('login-container').style.animation = 'shake 0.5s';
-                setTimeout(() => {
-                    document.getElementById('login-container').style.animation = '';
-                }, 500);
-            }
-        }
-
-        // Show protected content
-        function showContent() {
-            document.getElementById('login-container').style.display = 'none';
-            document.getElementById('content-container').style.display = 'block';
-        }
-
-        // Logout
-        function logout() {
-            sessionStorage.removeItem('elfAccess');
-            document.getElementById('content-container').style.display = 'none';
-            document.getElementById('login-container').style.display = 'block';
-            document.getElementById('password').value = '';
-            document.getElementById('error').style.display = 'none';
+            showDashboard();
         }
 
         // Enter key support
-        document.getElementById('password').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                checkPassword();
+        document.addEventListener('DOMContentLoaded', () => {
+            const passwordInput = document.getElementById('password');
+            if (passwordInput) {
+                passwordInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') checkPassword();
+                });
             }
         });
 
-        // Shake animation
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes shake {
-                0%, 100% { transform: translateX(0); }
-                25% { transform: translateX(-10px); }
-                75% { transform: translateX(10px); }
+        // Tab Switching
+        function switchTab(index) {
+            const tabs = document.querySelectorAll('.tab');
+            const panels = document.querySelectorAll('.dashboard-panel');
+
+            tabs.forEach((tab, i) => {
+                tab.classList.toggle('active', i === index);
+            });
+
+            panels.forEach((panel, i) => {
+                panel.classList.toggle('active', i === index);
+            });
+
+            // Initialize charts for Data Analyst dashboard
+            if (index === 1 && !window.chartsInitialized) {
+                initializeCharts();
+                window.chartsInitialized = true;
             }
-        `;
-        document.head.appendChild(style);
+        }
+
+        // Initialize All Dashboards
+        function initializeDashboards() {
+            initializeExecutiveDashboard();
+            initializeMedicalDashboard();
+            initializeVisualDashboard();
+            initializeGamingDashboard();
+            populateMRIGrids();
+        }
+
+        // Dashboard 1: Executive Clean
+        function initializeExecutiveDashboard() {
+            const categories = [
+                { name: 'Blood Sugar', icon: '🩸', data: healthData.biomarkers.bloodSugar, color: '#ef4444', pulse: false },
+                { name: 'Blood & Iron', icon: '🔴', data: healthData.biomarkers.bloodIron, color: '#f97316', pulse: false },
+                { name: 'Thyroid', icon: '🦋', data: healthData.biomarkers.thyroid, color: '#8b5cf6', pulse: false },
+                { name: 'Liver', icon: '🫀', data: healthData.biomarkers.liver, color: '#a855f7', pulse: false },
+                { name: 'Inflammation', icon: '🔥', data: healthData.biomarkers.inflammation, color: '#ec4899', pulse: false },
+                { name: 'Kidneys', icon: '🫘', data: healthData.biomarkers.kidneys, color: '#06b6d4', pulse: false },
+                { name: 'Heart/Lipids', icon: '❤️', data: healthData.biomarkers.heart, color: '#dc2626', pulse: true },
+                { name: 'Vitamins & Minerals', icon: '💊', data: healthData.biomarkers.vitamins, color: '#10b981', pulse: false }
+            ];
+
+            const grid = document.getElementById('metrics-grid');
+            grid.innerHTML = categories.map((cat, idx) => `
+                <div class="metric-card ${cat.pulse ? 'pulse' : ''}" onclick="toggleCard(this)">
+                    <h3><span class="icon">${cat.icon}</span> ${cat.name}</h3>
+                    <div class="metric-value" data-target="${cat.data.length}">0</div>
+                    <div class="metric-label">${cat.data.length} biomarkers tested</div>
+                    <span class="status-badge normal">✓ All Normal</span>
+                    <div class="metric-details">
+                        ${cat.data.map(bio => `
+                            <div class="biomarker-item">
+                                <span class="biomarker-name">${bio.name}</span>
+                                <span class="biomarker-value">${bio.value} ${bio.unit}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+
+            // Animate numbers
+            setTimeout(() => {
+                document.querySelectorAll('.metric-value').forEach(el => {
+                    const target = parseInt(el.dataset.target);
+                    animateNumber(el, 0, target, 1000);
+                });
+            }, 300);
+        }
+
+        function toggleCard(card) {
+            card.classList.toggle('expanded');
+        }
+
+        function animateNumber(element, start, end, duration) {
+            const startTime = performance.now();
+
+            function update(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const current = Math.floor(start + (end - start) * progress);
+                element.textContent = current;
+
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                }
+            }
+
+            requestAnimationFrame(update);
+        }
+
+        // Dashboard 2: Data Analyst
+        function initializeCharts() {
+            // Category Overview Bar Chart
+            const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+            new Chart(categoryCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Blood Sugar', 'Blood & Iron', 'Thyroid', 'Liver', 'Inflammation', 'Kidneys', 'Heart', 'Vitamins'],
+                    datasets: [{
+                        label: 'Number of Biomarkers',
+                        data: [2, 10, 2, 2, 1, 2, 7, 7],
+                        backgroundColor: [
+                            'rgba(239, 68, 68, 0.7)',
+                            'rgba(249, 115, 22, 0.7)',
+                            'rgba(139, 92, 246, 0.7)',
+                            'rgba(168, 85, 247, 0.7)',
+                            'rgba(236, 72, 153, 0.7)',
+                            'rgba(6, 182, 212, 0.7)',
+                            'rgba(220, 38, 38, 0.7)',
+                            'rgba(16, 185, 129, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(239, 68, 68, 1)',
+                            'rgba(249, 115, 22, 1)',
+                            'rgba(139, 92, 246, 1)',
+                            'rgba(168, 85, 247, 1)',
+                            'rgba(236, 72, 153, 1)',
+                            'rgba(6, 182, 212, 1)',
+                            'rgba(220, 38, 38, 1)',
+                            'rgba(16, 185, 129, 1)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    },
+                    animation: {
+                        duration: 2000,
+                        easing: 'easeInOutQuart'
+                    }
+                }
+            });
+
+            // Historical Trends Line Chart
+            const trendCtx = document.getElementById('trendChart').getContext('2d');
+            new Chart(trendCtx, {
+                type: 'line',
+                data: {
+                    labels: ['May 2021', 'Jan 2026'],
+                    datasets: [
+                        {
+                            label: 'Total Cholesterol',
+                            data: [5.4, 5.3],
+                            borderColor: 'rgb(220, 38, 38)',
+                            backgroundColor: 'rgba(220, 38, 38, 0.1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'HbA1c',
+                            data: [28, 29],
+                            borderColor: 'rgb(16, 185, 129)',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Vitamin D',
+                            data: [58, 62],
+                            borderColor: 'rgb(249, 115, 22)',
+                            backgroundColor: 'rgba(249, 115, 22, 0.1)',
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' }
+                    },
+                    animation: {
+                        duration: 2000,
+                        easing: 'easeInOutQuart'
+                    }
+                }
+            });
+
+            // Radar Chart
+            const radarCtx = document.getElementById('radarChart').getContext('2d');
+            new Chart(radarCtx, {
+                type: 'radar',
+                data: {
+                    labels: ['Blood Sugar', 'Blood & Iron', 'Thyroid', 'Liver', 'Kidneys', 'Heart', 'Vitamins', 'Hormones'],
+                    datasets: [{
+                        label: 'Health Score (%)',
+                        data: [100, 100, 100, 100, 100, 98, 100, 100],
+                        fill: true,
+                        backgroundColor: 'rgba(0, 102, 204, 0.2)',
+                        borderColor: 'rgb(0, 102, 204)',
+                        pointBackgroundColor: 'rgb(0, 102, 204)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgb(0, 102, 204)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    },
+                    animation: {
+                        duration: 2000,
+                        easing: 'easeInOutQuart'
+                    }
+                }
+            });
+
+            // Populate data table
+            populateAnalystTable();
+        }
+
+        function populateAnalystTable() {
+            const tbody = document.getElementById('analyst-table-body');
+            const allBiomarkers = [];
+
+            Object.entries(healthData.biomarkers).forEach(([category, markers]) => {
+                markers.forEach(marker => {
+                    allBiomarkers.push({ ...marker, category });
+                });
+            });
+
+            tbody.innerHTML = allBiomarkers.map(bio => `
+                <tr>
+                    <td><strong>${bio.name}</strong></td>
+                    <td>${bio.value}</td>
+                    <td>${bio.unit}</td>
+                    <td>${bio.refMin} - ${bio.refMax}</td>
+                    <td><span class="status-badge ${bio.status.toLowerCase()}">${bio.status}</span></td>
+                    <td>${bio.prev !== undefined ? (bio.value > bio.prev ? '↗' : bio.value < bio.prev ? '↘' : '→') : '-'}</td>
+                </tr>
+            `).join('');
+
+            // Search functionality
+            document.getElementById('search-biomarker').addEventListener('input', (e) => {
+                const search = e.target.value.toLowerCase();
+                tbody.querySelectorAll('tr').forEach(row => {
+                    const text = row.textContent.toLowerCase();
+                    row.style.display = text.includes(search) ? '' : 'none';
+                });
+            });
+        }
+
+        // Dashboard 3: Medical Professional
+        function initializeMedicalDashboard() {
+            const tbody = document.getElementById('medical-table-body');
+            const categories = {
+                'Blood Sugar': healthData.biomarkers.bloodSugar,
+                'Blood & Iron': healthData.biomarkers.bloodIron,
+                'Thyroid': healthData.biomarkers.thyroid,
+                'Liver': healthData.biomarkers.liver,
+                'Inflammation': healthData.biomarkers.inflammation,
+                'Kidneys': healthData.biomarkers.kidneys,
+                'Heart/Lipids': healthData.biomarkers.heart,
+                'Vitamins & Minerals': healthData.biomarkers.vitamins,
+                'Hormones': healthData.biomarkers.hormones
+            };
+
+            let html = '';
+            Object.entries(categories).forEach(([catName, markers]) => {
+                html += `<tr class="category-header"><td colspan="6"><strong>${catName}</strong></td></tr>`;
+                markers.forEach(bio => {
+                    html += `
+                        <tr>
+                            <td style="padding-left: 24px;">${bio.name}</td>
+                            <td><strong>${bio.value}</strong></td>
+                            <td>${bio.unit}</td>
+                            <td>${bio.refMin} - ${bio.refMax}</td>
+                            <td><span class="status-badge ${bio.status.toLowerCase()}">${bio.status}</span></td>
+                            <td>${bio.prev !== undefined ? bio.prev : 'N/A'}</td>
+                        </tr>
+                    `;
+                });
+            });
+            tbody.innerHTML = html;
+        }
+
+        // Dashboard 4: Visual Infographic
+        function initializeVisualDashboard() {
+            const systems = [
+                { name: 'Cardiovascular', icon: '❤️', score: 98, color: '#dc2626' },
+                { name: 'Metabolic', icon: '🔋', score: 100, color: '#10b981' },
+                { name: 'Blood Health', icon: '🩸', score: 100, color: '#f97316' },
+                { name: 'Kidney Function', icon: '🫘', score: 100, color: '#06b6d4' },
+                { name: 'Liver Function', icon: '🫀', score: 100, color: '#a855f7' },
+                { name: 'Thyroid', icon: '🦋', score: 100, color: '#8b5cf6' },
+                { name: 'Vitamins', icon: '💊', score: 100, color: '#10b981' },
+                { name: 'Hormones', icon: '⚡', score: 100, color: '#ec4899' }
+            ];
+
+            const grid = document.getElementById('systems-grid');
+            grid.innerHTML = systems.map(sys => `
+                <div class="system-card">
+                    <div class="system-icon">${sys.icon}</div>
+                    <h3>${sys.name}</h3>
+                    <svg class="progress-ring" viewBox="0 0 120 120">
+                        <circle cx="60" cy="60" r="54" stroke="#e0e0e0" stroke-width="12" fill="none"/>
+                        <circle cx="60" cy="60" r="54" stroke="${sys.color}" stroke-width="12" fill="none"
+                            stroke-dasharray="339.29" stroke-dashoffset="${339.29 * (1 - sys.score / 100)}"
+                            transform="rotate(-90 60 60)" stroke-linecap="round"
+                            style="transition: stroke-dashoffset 2s ease-in-out;"/>
+                        <text x="60" y="60" text-anchor="middle" dy=".3em" font-size="24" font-weight="bold" fill="${sys.color}">${sys.score}%</text>
+                    </svg>
+                    <p style="margin-top: 12px; color: var(--text-muted); font-size: 0.9em;">All markers optimal</p>
+                </div>
+            `).join('');
+        }
+
+        // Dashboard 5: Gaming/Futuristic
+        function initializeGamingDashboard() {
+            const systems = [
+                { name: 'CARDIOVASCULAR SYSTEM', status: 'OPTIMAL', value: 98, max: 100 },
+                { name: 'METABOLIC PROCESSOR', status: 'NOMINAL', value: 100, max: 100 },
+                { name: 'BLOOD CIRCULATION', status: 'NOMINAL', value: 100, max: 100 },
+                { name: 'RENAL FILTERS', status: 'NOMINAL', value: 100, max: 100 },
+                { name: 'HEPATIC FUNCTION', status: 'NOMINAL', value: 100, max: 100 },
+                { name: 'ENDOCRINE REGULATOR', status: 'NOMINAL', value: 100, max: 100 },
+                { name: 'VITAMIN RESERVES', status: 'NOMINAL', value: 100, max: 100 },
+                { name: 'HORMONE LEVELS', status: 'NOMINAL', value: 100, max: 100 }
+            ];
+
+            const grid = document.getElementById('gaming-grid');
+            grid.innerHTML = systems.map(sys => `
+                <div class="hex-panel">
+                    <h3>[ ${sys.name} ]</h3>
+                    <p style="color: #00ff9d; font-family: 'Courier New', monospace; margin: 12px 0;">STATUS: ${sys.status}</p>
+                    <div class="stat-bar">
+                        <div class="stat-fill" style="width: ${(sys.value / sys.max) * 100}%;">
+                            ${sys.value}/${sys.max}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            // Animate stat bars
+            setTimeout(() => {
+                document.querySelectorAll('.stat-fill').forEach(bar => {
+                    const width = bar.style.width;
+                    bar.style.width = '0%';
+                    setTimeout(() => {
+                        bar.style.width = width;
+                    }, 100);
+                });
+            }, 500);
+        }
+
+        // MRI Image Grids
+        function populateMRIGrids() {
+            ['exec', 'medical', 'gaming'].forEach(type => {
+                const grid = document.getElementById(`mri-grid-${type}`);
+                if (grid) {
+                    grid.innerHTML = mriImages.map((img, idx) => `
+                        <div class="mri-image" onclick="openLightbox(${idx})">
+                            <img src="${img.src}" alt="${img.label}">
+                            <div class="mri-label">${img.label}${img.status === 'Anomaly' ? ' ⚠️' : ''}</div>
+                        </div>
+                    `).join('');
+                }
+            });
+        }
+
+        // Lightbox Functions
+        function openLightbox(index) {
+            currentLightboxIndex = index;
+            const lightbox = document.getElementById('lightbox');
+            const img = document.getElementById('lightbox-image');
+            const caption = document.getElementById('lightbox-caption');
+
+            img.src = mriImages[index].src;
+            caption.textContent = mriImages[index].label;
+            lightbox.classList.add('active');
+        }
+
+        function closeLightbox() {
+            document.getElementById('lightbox').classList.remove('active');
+        }
+
+        function navigateLightbox(direction) {
+            currentLightboxIndex = (currentLightboxIndex + direction + mriImages.length) % mriImages.length;
+            const img = document.getElementById('lightbox-image');
+            const caption = document.getElementById('lightbox-caption');
+
+            img.src = mriImages[currentLightboxIndex].src;
+            caption.textContent = mriImages[currentLightboxIndex].label;
+        }
+
+        // Keyboard navigation for lightbox
+        document.addEventListener('keydown', (e) => {
+            const lightbox = document.getElementById('lightbox');
+            if (lightbox.classList.contains('active')) {
+                if (e.key === 'Escape') closeLightbox();
+                if (e.key === 'ArrowLeft') navigateLightbox(-1);
+                if (e.key === 'ArrowRight') navigateLightbox(1);
+            }
+        });
+
+        // Close lightbox when clicking outside image
+        document.getElementById('lightbox').addEventListener('click', (e) => {
+            if (e.target.id === 'lightbox') closeLightbox();
+        });
     </script>
 </body>
 </html>
