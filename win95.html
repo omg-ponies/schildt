@@ -371,15 +371,11 @@
             // ddrive (D:) is CD-ROM with no disc - shows error from My Computer
             notepad: { title: 'Untitled - Notepad', icon: '📝', width: 500, height: 350, content: '<textarea style="width:100%;height:100%;border:none;resize:none;padding:10px;font-family:Courier New,monospace;font-size:12px;outline:none;"></textarea>' },
             projects: { title: 'Projects', icon: '📁', width: 550, height: 400, content: '<div style="padding:20px;display:grid;grid-template-columns:repeat(3,1fr);gap:20px;text-align:center;"><div style="cursor:pointer;" onclick="window.open(\'https://kry.se\')"><div style="font-size:48px;">🏥</div><div>Kry</div></div><div style="cursor:pointer;" onclick="window.open(\'https://elf.care\')"><div style="font-size:48px;">🧝</div><div>Elfcare</div></div><div style="cursor:pointer;" onclick="window.open(\'https://alwayssummer.se\')"><div style="font-size:48px;">☀️</div><div>ASAM</div></div></div>' },
-            games: { title: 'Games', icon: '🎮', width: 500, height: 350, isFolder: true, createContent: createGamesFolder },
+            games: { title: 'Games', icon: '🎮', width: 500, height: 350, content: '<div style="padding:20px;display:grid;grid-template-columns:repeat(3,1fr);gap:20px;text-align:center;"><div style="cursor:pointer;" onclick="alert(\'Please insert the SimTower CD-ROM and click OK.\\n\\nD:\\\\ is not accessible.\\nThe device is not ready.\')"><div style="font-size:48px;">🏢</div><div>SimTower</div></div><div style="cursor:pointer;" onclick="alert(\'Please insert the Theme Hospital CD-ROM and click OK.\\n\\nD:\\\\ is not accessible.\\nThe device is not ready.\')"><div style="font-size:48px;">🏥</div><div>Theme Hospital</div></div><div style="cursor:pointer;" onclick="alert(\'Please insert the Age of Empires CD-ROM and click OK.\\n\\nD:\\\\ is not accessible.\\nThe device is not ready.\')"><div style="font-size:48px;">⚔️</div><div>Age of Empires</div></div></div>' },
             paint: { title: 'untitled - Paint', icon: '🎨', width: 800, height: 550, menuBar: ['File', 'Edit', 'View', 'Image', 'Colors', 'Help'], createContent: createPaint },
             minesweeper: { title: 'Minesweeper', icon: '💣', width: 280, height: 380, menuBar: ['Game', 'Help'], createContent: createMinesweeper },
             solitaire: { title: 'Solitaire', icon: '🃏', width: 800, height: 600, menuBar: ['Game', 'Help'], createContent: createSolitaire },
             recycle: { title: 'Recycle Bin', icon: '🗑️', width: 400, height: 300, content: '<div style="padding:40px;text-align:center;color:#808080;">🗑️<br><br>Recycle Bin is empty</div>' },
-            // CD-ROM Games
-            simtower: { title: 'SimTower', icon: '🏢', isCdRom: true, cdName: 'SimTower' },
-            themehospital: { title: 'Theme Hospital', icon: '🏥', isCdRom: true, cdName: 'Theme Hospital' },
-            aoe: { title: 'Age of Empires', icon: '⚔️', isCdRom: true, cdName: 'Age of Empires' },
             display: { title: 'Display Properties', icon: '🖥️', width: 450, height: 500, menuBar: [], createContent: createDisplayProperties },
         };
 
@@ -867,77 +863,6 @@
             });
         }
 
-        // =====================
-        // GAMES FOLDER
-        // =====================
-
-        function createGamesFolder(container, windowId) {
-            const games = [
-                { id: 'simtower', icon: '🏢', label: 'SimTower.lnk' },
-                { id: 'themehospital', icon: '🏥', label: 'Theme Hospital.lnk' },
-                { id: 'aoe', icon: '⚔️', label: 'Age of Empires.lnk' },
-            ];
-
-            container.style.background = 'white';
-            container.style.padding = '10px';
-            container.innerHTML = `
-                <div style="display:flex;flex-wrap:wrap;gap:20px;">
-                    ${games.map(g => `
-                        <div class="folder-icon" data-game="${g.id}" style="width:70px;text-align:center;cursor:pointer;padding:4px;">
-                            <div style="font-size:32px;position:relative;">
-                                ${g.icon}
-                                <div style="position:absolute;bottom:-2px;right:5px;font-size:12px;">↗️</div>
-                            </div>
-                            <div style="font-size:11px;margin-top:4px;">${g.label}</div>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-
-            container.querySelectorAll('.folder-icon').forEach(icon => {
-                icon.addEventListener('dblclick', () => {
-                    const gameId = icon.dataset.game;
-                    showCdRomError(apps[gameId].cdName);
-                });
-                icon.addEventListener('click', () => {
-                    container.querySelectorAll('.folder-icon').forEach(i => i.style.background = '');
-                    icon.style.background = '#000080';
-                    icon.style.color = 'white';
-                });
-            });
-        }
-
-        function showCdRomError(gameName) {
-            const errorId = `error-${Date.now()}`;
-            const errorEl = document.createElement('div');
-            errorEl.className = 'window';
-            errorEl.id = errorId;
-            errorEl.style.cssText = 'left:50%;top:50%;transform:translate(-50%,-50%);width:380px;height:auto;z-index:99999;';
-
-            errorEl.innerHTML = `
-                <div class="title-bar">
-                    <span class="title-bar-text"><span class="title-bar-icon">❌</span>${gameName}</span>
-                    <div class="title-bar-controls">
-                        <button class="close-btn" onclick="this.closest('.window').remove()">×</button>
-                    </div>
-                </div>
-                <div style="padding:20px;background:var(--win-bg);display:flex;gap:15px;align-items:flex-start;">
-                    <div style="font-size:32px;">💿</div>
-                    <div style="flex:1;">
-                        <p style="margin-bottom:15px;font-size:12px;line-height:1.4;">
-                            <b>D:\\ is not accessible.</b><br><br>
-                            Please insert the <b>${gameName}</b> CD-ROM into your CD-ROM drive (D:) and click Retry.
-                        </p>
-                        <div style="display:flex;gap:8px;justify-content:center;">
-                            <button onclick="this.closest('.window').remove()" style="padding:4px 20px;min-width:75px;cursor:pointer;">Retry</button>
-                            <button onclick="this.closest('.window').remove()" style="padding:4px 20px;min-width:75px;cursor:pointer;">Cancel</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            document.getElementById('windowsContainer').appendChild(errorEl);
-        }
 
         // =====================
         // PAINT

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎄 Elf Access 🎄</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #1a472a 0%, #2d5a3d 50%, #1a472a 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .snowflake {
+            position: fixed;
+            top: -10px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 1em;
+            user-select: none;
+            pointer-events: none;
+            animation: fall linear infinite;
+        }
+
+        @keyframes fall {
+            to {
+                transform: translateY(100vh);
+            }
+        }
+
+        #login-container {
+            background: rgba(0, 0, 0, 0.7);
+            border: 3px solid #c41e3a;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(196, 30, 58, 0.5);
+            max-width: 400px;
+            width: 90%;
+        }
+
+        #content-container {
+            display: none;
+            background: rgba(0, 0, 0, 0.8);
+            border: 3px solid #0f8a5f;
+            border-radius: 10px;
+            padding: 40px;
+            max-width: 800px;
+            width: 90%;
+            box-shadow: 0 0 30px rgba(15, 138, 95, 0.5);
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .elf-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+            animation: bounce 2s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        input[type="password"] {
+            width: 100%;
+            padding: 15px;
+            margin: 20px 0;
+            border: 2px solid #c41e3a;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 1.1em;
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background: #c41e3a;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: #a01729;
+            transform: scale(1.05);
+        }
+
+        .error {
+            color: #ff6b6b;
+            margin-top: 15px;
+            font-weight: bold;
+            display: none;
+        }
+
+        .message {
+            font-size: 1.2em;
+            line-height: 1.8;
+            text-align: left;
+            margin: 20px 0;
+        }
+
+        .signature {
+            text-align: right;
+            font-style: italic;
+            margin-top: 30px;
+            color: #0f8a5f;
+        }
+
+        .logout-btn {
+            background: #555;
+            margin-top: 20px;
+        }
+
+        .logout-btn:hover {
+            background: #333;
+        }
+    </style>
+</head>
+<body>
+    <!-- Snowflakes -->
+    <div id="snowflakes"></div>
+
+    <!-- Login Form -->
+    <div id="login-container">
+        <div class="elf-icon">🧝</div>
+        <h1>Elf Access Portal</h1>
+        <p>Enter the secret code to proceed</p>
+        <input type="password" id="password" placeholder="Enter password..." />
+        <button onclick="checkPassword()">Enter</button>
+        <div class="error" id="error">❌ Incorrect password. Try again!</div>
+    </div>
+
+    <!-- Protected Content -->
+    <div id="content-container">
+        <h1>🎄 Welcome, Friend! 🎄</h1>
+        <div class="message">
+            <p>🧝 You've found the secret elf page!</p>
+            <p>This is a password-protected area. You can customize this content to display whatever you'd like.</p>
+            <p>The snow is falling outside, the fire is warm, and all is well in the workshop.</p>
+            <p>May your days be merry and bright! ✨</p>
+        </div>
+        <div class="signature">
+            — The Elves 🎅
+        </div>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+
+    <script>
+        // Password configuration - change this to your desired password
+        const CORRECT_PASSWORD = 'elf2026';
+
+        // Create snowflakes
+        function createSnowflakes() {
+            const snowflakesContainer = document.getElementById('snowflakes');
+            for (let i = 0; i < 50; i++) {
+                const snowflake = document.createElement('div');
+                snowflake.className = 'snowflake';
+                snowflake.textContent = '❄';
+                snowflake.style.left = Math.random() * 100 + '%';
+                snowflake.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                snowflake.style.animationDelay = Math.random() * 5 + 's';
+                snowflake.style.opacity = Math.random();
+                snowflakesContainer.appendChild(snowflake);
+            }
+        }
+
+        createSnowflakes();
+
+        // Check if already logged in
+        if (sessionStorage.getItem('elfAccess') === 'granted') {
+            showContent();
+        }
+
+        // Password check
+        function checkPassword() {
+            const passwordInput = document.getElementById('password');
+            const errorDiv = document.getElementById('error');
+
+            if (passwordInput.value === CORRECT_PASSWORD) {
+                sessionStorage.setItem('elfAccess', 'granted');
+                showContent();
+            } else {
+                errorDiv.style.display = 'block';
+                passwordInput.value = '';
+                passwordInput.focus();
+
+                // Shake animation
+                document.getElementById('login-container').style.animation = 'shake 0.5s';
+                setTimeout(() => {
+                    document.getElementById('login-container').style.animation = '';
+                }, 500);
+            }
+        }
+
+        // Show protected content
+        function showContent() {
+            document.getElementById('login-container').style.display = 'none';
+            document.getElementById('content-container').style.display = 'block';
+        }
+
+        // Logout
+        function logout() {
+            sessionStorage.removeItem('elfAccess');
+            document.getElementById('content-container').style.display = 'none';
+            document.getElementById('login-container').style.display = 'block';
+            document.getElementById('password').value = '';
+            document.getElementById('error').style.display = 'none';
+        }
+
+        // Enter key support
+        document.getElementById('password').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkPassword();
+            }
+        });
+
+        // Shake animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                25% { transform: translateX(-10px); }
+                75% { transform: translateX(10px); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
