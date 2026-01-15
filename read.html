@@ -114,46 +114,54 @@
             transform: translate(-50%, -50%);
             font-size: 3.5em;
             user-select: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 0.05em;
         }
 
         /* Container to keep ORP letter perfectly centered */
         .word-container {
-            display: inline-flex;
-            align-items: baseline;
+            position: relative;
+            display: inline-block;
+            white-space: nowrap;
         }
 
-        .before-orp {
-            color: #ffffff;
-            text-align: right;
-            min-width: 0;
-        }
-
+        /* ORP letter is the ANCHOR - never moves */
         .orp-letter {
             color: #ee5054;
             font-weight: bold;
-            position: relative;
-            /* This creates the fixed anchor point */
-        }
-
-        /* Subtle focus marker (optional) */
-        .orp-letter::after {
-            content: '';
             position: absolute;
-            left: 50%;
-            top: -30px;
-            width: 2px;
-            height: 20px;
-            background: rgba(238, 80, 84, 0.2);
+            left: 0;
+            top: 0;
             transform: translateX(-50%);
         }
 
+        /* Text before ORP - positioned to END at the ORP */
+        .before-orp {
+            color: #ffffff;
+            position: absolute;
+            right: 0;
+            top: 0;
+            transform: translateX(-0.025em);
+        }
+
+        /* Text after ORP - positioned to START at the ORP */
         .after-orp {
             color: #ffffff;
-            text-align: left;
-            min-width: 0;
+            position: absolute;
+            left: 0;
+            top: 0;
+            transform: translateX(0.525em);
+        }
+
+        /* Subtle focus marker */
+        .focus-marker {
+            position: absolute;
+            left: 50%;
+            top: -35px;
+            width: 2px;
+            height: 25px;
+            background: rgba(238, 80, 84, 0.3);
+            transform: translateX(-50%);
         }
 
         /* Progress Bar (YouTube-style) */
@@ -334,16 +342,17 @@
         }
 
         // Display word with ORP highlighted
-        // The ORP letter stays in EXACTLY the same position
+        // The ORP letter is ABSOLUTELY FIXED - never moves
         function displayWord(word) {
             const orpIndex = getORPIndex(word);
             const before = word.slice(0, orpIndex);
             const orp = word[orpIndex];
             const after = word.slice(orpIndex + 1);
 
-            // Wrap in container to maintain fixed ORP position
+            // Use absolute positioning so ORP letter NEVER moves
             wordDisplay.innerHTML = `
                 <div class="word-container">
+                    <span class="focus-marker"></span>
                     <span class="before-orp">${before}</span><span class="orp-letter">${orp}</span><span class="after-orp">${after}</span>
                 </div>
             `;
