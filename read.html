@@ -36,6 +36,19 @@
             letter-spacing: 2px;
         }
 
+        .keyboard-hints {
+            color: #666;
+            font-size: 0.85em;
+            margin-top: 30px;
+            line-height: 1.8;
+            max-width: 600px;
+        }
+
+        .keyboard-hints strong {
+            color: #999;
+            font-weight: normal;
+        }
+
         #text-input {
             width: 100%;
             max-width: 600px;
@@ -95,27 +108,52 @@
         }
 
         #word-display {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             font-size: 3.5em;
-            white-space: nowrap;
             user-select: none;
-            text-align: center;
-            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Container to keep ORP letter perfectly centered */
+        .word-container {
+            display: inline-flex;
+            align-items: baseline;
         }
 
         .before-orp {
             color: #ffffff;
-            display: inline-block;
+            text-align: right;
+            min-width: 0;
         }
 
         .orp-letter {
             color: #ee5054;
             font-weight: bold;
-            display: inline-block;
+            position: relative;
+            /* This creates the fixed anchor point */
+        }
+
+        /* Subtle focus marker (optional) */
+        .orp-letter::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: -30px;
+            width: 2px;
+            height: 20px;
+            background: rgba(238, 80, 84, 0.2);
+            transform: translateX(-50%);
         }
 
         .after-orp {
             color: #ffffff;
-            display: inline-block;
+            text-align: left;
+            min-width: 0;
         }
 
         /* Progress Bar (YouTube-style) */
@@ -233,6 +271,9 @@
         <h1>Speed Reader</h1>
         <textarea id="text-input" placeholder="Paste your text here..."></textarea>
         <button id="begin-button">Begin</button>
+        <div class="keyboard-hints">
+            <strong>Space</strong> pause · <strong>Esc</strong> stop · <strong>↑↓</strong> speed · <strong>←→</strong> skip
+        </div>
     </div>
 
     <!-- Reading Section -->
@@ -293,14 +334,18 @@
         }
 
         // Display word with ORP highlighted
+        // The ORP letter stays in EXACTLY the same position
         function displayWord(word) {
             const orpIndex = getORPIndex(word);
             const before = word.slice(0, orpIndex);
             const orp = word[orpIndex];
             const after = word.slice(orpIndex + 1);
 
+            // Wrap in container to maintain fixed ORP position
             wordDisplay.innerHTML = `
-                <span class="before-orp">${before}</span><span class="orp-letter">${orp}</span><span class="after-orp">${after}</span>
+                <div class="word-container">
+                    <span class="before-orp">${before}</span><span class="orp-letter">${orp}</span><span class="after-orp">${after}</span>
+                </div>
             `;
         }
 
