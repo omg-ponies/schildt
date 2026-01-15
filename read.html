@@ -110,19 +110,19 @@
         #word-display {
             position: fixed;
             top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            left: 0;
+            right: 0;
+            transform: translateY(-50%);
             font-size: 3.5em;
             user-select: none;
             font-family: Georgia, 'Times New Roman', serif;
         }
 
-        /* Grid container keeps ORP letter always centered */
+        /* Full-width grid keeps ORP letter ALWAYS at center */
         .word-container {
             display: grid;
-            grid-template-columns: auto auto auto;
+            grid-template-columns: 1fr auto 1fr;
             align-items: baseline;
-            justify-items: center;
             position: relative;
         }
 
