@@ -114,43 +114,34 @@
             transform: translate(-50%, -50%);
             font-size: 3.5em;
             user-select: none;
-            font-family: 'Courier New', monospace;
-            letter-spacing: 0.05em;
+            font-family: Georgia, 'Times New Roman', serif;
         }
 
-        /* Container to keep ORP letter perfectly centered */
+        /* Grid container keeps ORP letter always centered */
         .word-container {
+            display: grid;
+            grid-template-columns: auto auto auto;
+            align-items: baseline;
+            justify-items: center;
             position: relative;
-            display: inline-block;
-            white-space: nowrap;
         }
 
-        /* ORP letter is the ANCHOR - never moves */
+        .before-orp {
+            color: #ffffff;
+            text-align: right;
+            justify-self: end;
+        }
+
         .orp-letter {
             color: #ee5054;
             font-weight: bold;
-            position: absolute;
-            left: 0;
-            top: 0;
-            transform: translateX(-50%);
+            justify-self: center;
         }
 
-        /* Text before ORP - positioned to END at the ORP */
-        .before-orp {
-            color: #ffffff;
-            position: absolute;
-            right: 0;
-            top: 0;
-            transform: translateX(-0.025em);
-        }
-
-        /* Text after ORP - positioned to START at the ORP */
         .after-orp {
             color: #ffffff;
-            position: absolute;
-            left: 0;
-            top: 0;
-            transform: translateX(0.525em);
+            text-align: left;
+            justify-self: start;
         }
 
         /* Subtle focus marker */
