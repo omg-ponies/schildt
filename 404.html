@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - Page Not Found</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000000;
+            color: #ffffff;
+            font-family: 'Courier New', monospace;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            text-align: center;
+            max-width: 600px;
+        }
+
+        .panda {
+            font-size: 14px;
+            line-height: 1.2;
+            white-space: pre;
+            color: #888;
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        h1 {
+            font-size: 6em;
+            margin-bottom: 20px;
+            letter-spacing: 10px;
+            color: #fff;
+        }
+
+        p {
+            font-size: 1.2em;
+            margin-bottom: 30px;
+            color: #999;
+        }
+
+        a {
+            color: #fff;
+            text-decoration: none;
+            padding: 12px 30px;
+            border: 2px solid #fff;
+            border-radius: 4px;
+            transition: all 0.3s;
+            display: inline-block;
+        }
+
+        a:hover {
+            background: #fff;
+            color: #000;
+        }
+
+        @media (max-width: 768px) {
+            .panda {
+                font-size: 10px;
+            }
+
+            h1 {
+                font-size: 4em;
+                letter-spacing: 5px;
+            }
+
+            p {
+                font-size: 1em;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .panda {
+                font-size: 8px;
+            }
+
+            h1 {
+                font-size: 3em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <pre class="panda">
+    .-""-.
+   /      \
+  |  o  o  |
+  |   __   |
+   \  (__) /
+    '.__.'
+   /|    |\
+  (_|    |_)
+        </pre>
+
+        <h1>404</h1>
+        <p>This page seems to have wandered off...</p>
+        <a href="/">← Back to Home</a>
+    </div>
+</body>
+</html>
