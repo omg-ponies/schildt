@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speed Reader</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000000;
+            color: #ffffff;
+            font-family: Georgia, 'Times New Roman', serif;
+            overflow: hidden;
+            cursor: default;
+        }
+
+        /* Input Section */
+        #input-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 40px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 40px;
+            font-weight: normal;
+            letter-spacing: 2px;
+        }
+
+        #text-input {
+            width: 100%;
+            max-width: 600px;
+            min-height: 300px;
+            background: #1a1a1a;
+            color: #ffffff;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            font-size: 16px;
+            font-family: Georgia, 'Times New Roman', serif;
+            resize: vertical;
+            line-height: 1.6;
+        }
+
+        #text-input::placeholder {
+            color: #666;
+        }
+
+        #begin-button {
+            background: #ee5054;
+            color: #ffffff;
+            border: none;
+            padding: 16px 64px;
+            font-size: 18px;
+            font-family: Georgia, 'Times New Roman', serif;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 24px;
+            transition: all 0.3s;
+            letter-spacing: 1px;
+        }
+
+        #begin-button:hover {
+            background: #ff6064;
+            transform: translateY(-2px);
+        }
+
+        #begin-button:active {
+            transform: translateY(0);
+        }
+
+        /* Reading Section */
+        #reading-section {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #reading-section.active {
+            display: flex;
+        }
+
+        #word-display {
+            font-size: 3.5em;
+            white-space: nowrap;
+            user-select: none;
+            text-align: center;
+            position: relative;
+        }
+
+        .before-orp {
+            color: #ffffff;
+            display: inline-block;
+        }
+
+        .orp-letter {
+            color: #ee5054;
+            font-weight: bold;
+            display: inline-block;
+        }
+
+        .after-orp {
+            color: #ffffff;
+            display: inline-block;
+        }
+
+        /* Progress Bar (YouTube-style) */
+        #progress-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 1000;
+        }
+
+        #progress-container.visible {
+            opacity: 1;
+        }
+
+        #progress-bar {
+            height: 3px;
+            background: rgba(255, 255, 255, 0.1);
+            width: 100%;
+        }
+
+        #progress-fill {
+            height: 100%;
+            background: #ee5054;
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        #progress-info {
+            position: fixed;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 8px 20px;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        #progress-info.visible {
+            opacity: 1;
+        }
+
+        /* Completion Message */
+        #completion-message {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            font-size: 2em;
+            color: #999;
+        }
+
+        #completion-message.active {
+            display: block;
+        }
+
+        #completion-message p {
+            margin-bottom: 20px;
+        }
+
+        #completion-message small {
+            font-size: 0.5em;
+            color: #666;
+        }
+
+        /* Paused Indicator */
+        #paused-indicator {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(238, 80, 84, 0.2);
+            color: #ee5054;
+            padding: 8px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            letter-spacing: 1px;
+        }
+
+        #paused-indicator.active {
+            display: block;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            #word-display {
+                font-size: 2.5em;
+            }
+
+            #text-input {
+                min-height: 200px;
+                font-size: 14px;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Input Section -->
+    <div id="input-section">
+        <h1>Speed Reader</h1>
+        <textarea id="text-input" placeholder="Paste your text here..."></textarea>
+        <button id="begin-button">Begin</button>
+    </div>
+
+    <!-- Reading Section -->
+    <div id="reading-section">
+        <div id="word-display"></div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div id="progress-container">
+        <div id="progress-bar">
+            <div id="progress-fill"></div>
+        </div>
+    </div>
+
+    <!-- Progress Info -->
+    <div id="progress-info"></div>
+
+    <!-- Paused Indicator -->
+    <div id="paused-indicator">PAUSED</div>
+
+    <!-- Completion Message -->
+    <div id="completion-message">
+        <p>Reading Complete</p>
+        <small>Press any key to continue</small>
+    </div>
+
+    <script>
+        // State
+        let words = [];
+        let currentIndex = 0;
+        let wpm = 300;
+        let isReading = false;
+        let isPaused = false;
+        let intervalId = null;
+        let progressTimeout = null;
+
+        // Elements
+        const inputSection = document.getElementById('input-section');
+        const readingSection = document.getElementById('reading-section');
+        const textInput = document.getElementById('text-input');
+        const beginButton = document.getElementById('begin-button');
+        const wordDisplay = document.getElementById('word-display');
+        const progressContainer = document.getElementById('progress-container');
+        const progressFill = document.getElementById('progress-fill');
+        const progressInfo = document.getElementById('progress-info');
+        const pausedIndicator = document.getElementById('paused-indicator');
+        const completionMessage = document.getElementById('completion-message');
+
+        // ORP Calculation (Optimal Recognition Point)
+        function getORPIndex(word) {
+            const len = word.length;
+            if (len === 1) return 0;
+            if (len <= 3) return 0;
+            if (len <= 5) return 1;
+            if (len <= 9) return 2;
+            if (len <= 13) return 3;
+            return 4;
+        }
+
+        // Display word with ORP highlighted
+        function displayWord(word) {
+            const orpIndex = getORPIndex(word);
+            const before = word.slice(0, orpIndex);
+            const orp = word[orpIndex];
+            const after = word.slice(orpIndex + 1);
+
+            wordDisplay.innerHTML = `
+                <span class="before-orp">${before}</span><span class="orp-letter">${orp}</span><span class="after-orp">${after}</span>
+            `;
+        }
+
+        // Update progress bar and info
+        function updateProgress() {
+            const progress = (currentIndex / words.length) * 100;
+            progressFill.style.width = `${progress}%`;
+
+            const wordsRemaining = words.length - currentIndex;
+            const secondsRemaining = (wordsRemaining / wpm) * 60;
+            const minutesRemaining = Math.floor(secondsRemaining / 60);
+            const secondsRemainingMod = Math.floor(secondsRemaining % 60);
+            const timeString = `${minutesRemaining}:${secondsRemainingMod.toString().padStart(2, '0')}`;
+
+            progressInfo.textContent = `${wpm} WPM · ${Math.floor(progress)}% · ${timeString} remaining`;
+        }
+
+        // Show progress on mouse move
+        let progressVisible = false;
+        function showProgress() {
+            if (!isReading || isPaused) return;
+
+            progressContainer.classList.add('visible');
+            progressInfo.classList.add('visible');
+            progressVisible = true;
+
+            clearTimeout(progressTimeout);
+            progressTimeout = setTimeout(() => {
+                progressContainer.classList.remove('visible');
+                progressInfo.classList.remove('visible');
+                progressVisible = false;
+            }, 2000);
+        }
+
+        // Start reading
+        function startReading() {
+            const text = textInput.value.trim();
+            if (!text) {
+                alert('Please paste some text first!');
+                return;
+            }
+
+            words = text.split(/\s+/).filter(word => word.length > 0);
+            currentIndex = 0;
+            isReading = true;
+            isPaused = false;
+
+            inputSection.style.display = 'none';
+            readingSection.classList.add('active');
+            completionMessage.classList.remove('active');
+
+            updateProgress();
+            resumeReading();
+        }
+
+        // Resume reading
+        function resumeReading() {
+            if (!isReading) return;
+
+            isPaused = false;
+            pausedIndicator.classList.remove('active');
+
+            const interval = 60000 / wpm;
+            intervalId = setInterval(() => {
+                if (currentIndex >= words.length) {
+                    stopReading(true);
+                    return;
+                }
+
+                displayWord(words[currentIndex]);
+                currentIndex++;
+                updateProgress();
+            }, interval);
+
+            // Show first word immediately
+            if (currentIndex < words.length) {
+                displayWord(words[currentIndex]);
+                currentIndex++;
+                updateProgress();
+            }
+        }
+
+        // Pause reading
+        function pauseReading() {
+            if (!isReading || isPaused) return;
+
+            clearInterval(intervalId);
+            isPaused = true;
+            pausedIndicator.classList.add('active');
+        }
+
+        // Toggle pause
+        function togglePause() {
+            if (isPaused) {
+                resumeReading();
+            } else {
+                pauseReading();
+            }
+        }
+
+        // Stop reading
+        function stopReading(completed = false) {
+            clearInterval(intervalId);
+            isReading = false;
+            isPaused = false;
+
+            progressContainer.classList.remove('visible');
+            progressInfo.classList.remove('visible');
+            pausedIndicator.classList.remove('active');
+
+            if (completed) {
+                wordDisplay.style.display = 'none';
+                completionMessage.classList.add('active');
+            } else {
+                returnToInput();
+            }
+        }
+
+        // Return to input
+        function returnToInput() {
+            readingSection.classList.remove('active');
+            completionMessage.classList.remove('active');
+            inputSection.style.display = 'flex';
+            wordDisplay.style.display = 'block';
+        }
+
+        // Adjust WPM
+        function adjustWPM(delta) {
+            wpm = Math.max(100, Math.min(1000, wpm + delta));
+
+            if (isReading && !isPaused) {
+                clearInterval(intervalId);
+                resumeReading();
+            }
+
+            updateProgress();
+            showProgress();
+        }
+
+        // Skip words
+        function skipWords(delta) {
+            currentIndex = Math.max(0, Math.min(words.length - 1, currentIndex + delta));
+
+            if (currentIndex < words.length) {
+                displayWord(words[currentIndex]);
+            }
+
+            updateProgress();
+            showProgress();
+        }
+
+        // Event Listeners
+        beginButton.addEventListener('click', startReading);
+
+        document.addEventListener('keydown', (e) => {
+            if (!isReading) {
+                if (completionMessage.classList.contains('active')) {
+                    returnToInput();
+                }
+                return;
+            }
+
+            switch(e.key) {
+                case ' ':
+                    e.preventDefault();
+                    togglePause();
+                    break;
+                case 'Escape':
+                    e.preventDefault();
+                    stopReading();
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    adjustWPM(25);
+                    break;
+                case 'ArrowDown':
+                    e.preventDefault();
+                    adjustWPM(-25);
+                    break;
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    skipWords(-10);
+                    break;
+                case 'ArrowRight':
+                    e.preventDefault();
+                    skipWords(10);
+                    break;
+            }
+        });
+
+        // Mouse move to show progress
+        document.addEventListener('mousemove', () => {
+            if (isReading && !isPaused) {
+                showProgress();
+            }
+        });
+
+        // Allow Enter in textarea to start
+        textInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                e.preventDefault();
+                startReading();
+            }
+        });
+
+        // Prevent body scrolling
+        document.body.style.overflow = 'hidden';
+    </script>
+</body>
+</html>
